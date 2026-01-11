@@ -1,4 +1,4 @@
-# 02_CONFIGURACIO_AUTOMATICA - Administració de Serveis DHCP
+# 02 CONFIGURACIO AUTOMATICA - Administració de Serveis DHCP
 
 ## Índex de continguts
 
