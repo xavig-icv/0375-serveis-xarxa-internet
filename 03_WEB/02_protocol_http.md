@@ -26,7 +26,7 @@ Missatge que envia el client al servidor per sol·licitar un recurs.
 
 ```
 GET /index.html HTTP/1.1
-Host: www.exemple.cat
+Host: web1.educem.cat
 User-Agent: Mozilla/5.0 (Linux)
 Accept: text/html,application/xhtml+xml
 Accept-Language: ca,es;q=0.9,en;q=0.8
@@ -56,7 +56,7 @@ Connection: keep-alive
 
 ### Resposta HTTP (Response)
 
-Missatge que envia el servidor al servidor després de processar la seva petició.
+Missatge que envia el servidor al client després de processar la seva petició.
 
 **Estructura d'una resposta HTTP:**
 
@@ -99,7 +99,7 @@ Connection: keep-alive
 
 **Diferències clau amb HTTP:**
 
-- Comunicacions xifrdes (confidencialitat)
+- Comunicacions xifrades (confidencialitat)
 - Autenticació del servidor (mitjançant un certificat digital)
 - Integritat de dades (les dades no es poden manipular)
 - Port per defecte: 443

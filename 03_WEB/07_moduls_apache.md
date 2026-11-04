@@ -66,12 +66,12 @@ sudo systemctl restart apache2
 
 ```apache
 <VirtualHost *:443>
-    ServerName exemple.cat
+    ServerName web1.educem.cat
 
     SSLEngine on
-    SSLCertificateFile /etc/ssl/certs/exemple.cat.crt
-    SSLCertificateKeyFile /etc/ssl/private/exemple.cat.key
-    SSLCertificateChainFile /etc/ssl/certs/ca-bundle.crt
+    # Certificat i clau (els fitxers han d'existir: apartat 12)
+    SSLCertificateFile /etc/ssl/certs/web1.educem.cat.crt
+    SSLCertificateKeyFile /etc/ssl/private/web1.educem.cat.key
 
     # Protocols i cifratge segurs
     SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
@@ -214,34 +214,33 @@ DirectoryIndex index.php index.html
 #### mod_security - WAF (Web Application Firewall)
 
 ```bash
-# Instal·lar
-sudo apt install libapache2-mod-security2
+# Instal·lar el mòdul i les regles OWASP Core Rule Set (CRS) del repositori d'Ubuntu
+sudo apt install libapache2-mod-security2 modsecurity-crs
 
 # Activar
 sudo a2enmod security2
-sudo systemctl restart apache2
 
 # Configurar
 sudo cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
 sudo nano /etc/modsecurity/modsecurity.conf
 ```
 
-**Configuració bàsica:**
+**Configuració bàsica (`/etc/modsecurity/modsecurity.conf`):**
 
 ```apache
-# Canviar de DetectionOnly a On
+# Canviar de DetectionOnly (només registra) a On (bloqueja)
 SecRuleEngine On
-
-# Activar OWASP Core Rule Set
-sudo git clone https://github.com/coreruleset/coreruleset /etc/modsecurity/crs
-sudo cp /etc/modsecurity/crs/crs-setup.conf.example /etc/modsecurity/crs/crs-setup.conf
 ```
 
-**Incloure a Apache:**
+El paquet `modsecurity-crs` ja carrega les regles OWASP CRS automàticament (des de `/etc/apache2/mods-available/security2.conf`). No les torneu a descarregar ni a incloure: si les mateixes regles es carreguen dues vegades, Apache no arrenca (`Found another rule with the same id`).
 
-```apache
-<IfModule security2_module>
-    Include /etc/modsecurity/crs/crs-setup.conf
-    Include /etc/modsecurity/crs/rules/*.conf
-</IfModule>
+```bash
+sudo apache2ctl configtest
+sudo systemctl restart apache2
+
+# Prova: una petició amb un patró d'injecció SQL ha de retornar 403 Forbidden
+curl -I "http://localhost/?id=1%27%20OR%20%271%27=%271"
+
+# Els bloquejos queden registrats a:
+sudo tail /var/log/apache2/modsec_audit.log
 ```

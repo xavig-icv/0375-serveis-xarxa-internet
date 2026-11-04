@@ -1,27 +1,62 @@
 ## 04. Instal·lació de Nginx
 
+Al laboratori, Apache i Nginx funcionen **alhora** al servidor 0375 (vegeu l'[escenari del laboratori](../00_RECURSOS/01_escenari_laboratori.md)):
+
+- Apache fa servir els ports estàndard (80 i 443).
+- Nginx fa servir els ports 8080 (HTTP) i 8443 (HTTPS).
+
 ### Instal·lació a Debian/Ubuntu
 
-```bash
-# Actualitzar repositoris
-sudo apt update
+En instal·lar-se, Nginx intenta arrencar amb el seu lloc per defecte al port 80, que ja ocupa Apache. Per això aturem Apache un moment, canviem el port del lloc per defecte de Nginx i tornem a engegar Apache.
 
-# Instal·lar Nginx
+```bash
+# 1. Aturar Apache temporalment (allibera el port 80 durant la instal·lació)
+sudo systemctl stop apache2
+
+# 2. Actualitzar repositoris i instal·lar Nginx
+sudo apt update
 sudo apt install nginx
 
 # Verificar instal·lació
 nginx -v
 
 # Sortida:
-# nginx version: nginx/1.22.1 (Ubuntu)
+# nginx version: nginx/1.24.0 (Ubuntu)
+```
+
+**3. Canviar el port del lloc per defecte de Nginx (del 80 al 8080):**
+
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+
+```nginx
+    listen 8080 default_server;
+    listen [::]:8080 default_server;
+```
+
+```bash
+# Verificar la configuració i reiniciar Nginx
+sudo nginx -t
+sudo systemctl restart nginx
+
+# 4. Tornar a engegar Apache
+sudo systemctl start apache2
+
+# 5. Comprovar els ports: Apache al 80 i Nginx al 8080
+sudo ss -tlnp | grep -E 'apache2|nginx'
+```
+
+`Nota:` Si heu instal·lat Nginx amb Apache en marxa, la instal·lació avisarà que Nginx no ha pogut arrencar (el port 80 està ocupat). Canvieu el port com al pas 3 i després executeu:
+
+```bash
+sudo dpkg --configure -a
+sudo systemctl restart nginx
 ```
 
 ### Gestió del Servei
 
 ```bash
-# Aturar l'Apache (no tenir conflicte de serveis al mateix port)
-sudo systemctl stop apache2
-
 # Iniciar Nginx
 sudo systemctl start nginx
 
@@ -74,9 +109,9 @@ sudo nginx -t
 # nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
 # nginx: configuration file /etc/nginx/nginx.conf test is successful
 
-# Provar amb curl al mateix servidor
-curl http://localhost
+# Provar amb curl al mateix servidor (pàgina de benvinguda de Nginx)
+curl http://localhost:8080
 
 # Navegador del client
-http://IP_DEL_SERVIDOR
+http://192.168.1.2:8080
 ```

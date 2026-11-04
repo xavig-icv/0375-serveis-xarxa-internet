@@ -1,5 +1,7 @@
 # 03 SERVIDORS WEB - Administració de Servidors Web
 
+> Escenari del laboratori (IPs, domini `educem.cat`, ports d'Apache i Nginx): [00_RECURSOS/01_escenari_laboratori.md](../00_RECURSOS/01_escenari_laboratori.md)
+
 ## Índex de continguts
 
 1. [Introducció als Servidors Web](./01_intro_servidors_web.md)
@@ -18,3 +20,4 @@
 14. [Autenticació i Control d'Accés per IP](./14_acces_per_ip.md)
 15. [Proxy Invers - Nginx + Apache](./15_reverse_proxy.md)
 16. [Certificats de CA amb Let's Encrypt](./16_certificats_lets_encrypt.md)
+17. [Logs i Monitorització dels Servidors Web](./17_logs.md)

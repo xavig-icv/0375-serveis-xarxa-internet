@@ -13,7 +13,7 @@ sudo apt install apache2
 apache2 -v
 ```
 
-### 3.3 Gestió del Servei
+### Gestió del Servei
 
 ```bash
 # Iniciar l'Apache
@@ -49,7 +49,7 @@ sudo ss -plutn | grep :80
 **Provar des del navegador del client:**
 
 ```
-http://IP_DEL_SERVIDOR
+http://192.168.1.2
 ```
 
 Hauria de mostrar la pàgina per defecte de l'Apache.
@@ -61,10 +61,12 @@ Hauria de mostrar la pàgina per defecte de l'Apache.
 curl http://localhost
 
 # Al mateix servidor o des d'un client
-curl http://IP_DEL_SERVIDOR
+curl http://192.168.1.2
 
 # Hauria de retornar l'HTML de la pàgina per defecte
 ```
+
+`Nota:` Al laboratori, Apache fa servir els ports 80 i 443. Nginx (apartat 04) funcionarà alhora al mateix servidor amb els ports 8080 i 8443.
 
 ### Estructura de Directoris
 

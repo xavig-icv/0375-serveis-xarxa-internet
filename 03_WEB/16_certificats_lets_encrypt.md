@@ -1,6 +1,13 @@
-## 15. Certificats Digitals i SSL/TLS
+## 16. Certificats Digitals i SSL/TLS
 
 `NOTA`: Només fer aquest procés amb dominis reals i que en sigueu propietaris.
+
+**Aquest apartat no es pot fer al laboratori**, per dues raons:
+
+- `educem.cat` no és un domini registrat.
+- Els servidors no són accessibles des d'Internet. Let's Encrypt ha de poder arribar al servidor pel port 80 (validació HTTP-01) o ha de poder consultar un registre al DNS públic del domini (validació DNS-01).
+
+Als exemples, `example.com` (domini reservat per a documentació) representa el vostre domini real.
 
 Els certificats digitals emesos per una Autoritat Certificadora (CA) permeten establir connexions segures mitjançant SSL/TLS, garantint:
 
@@ -13,8 +20,11 @@ Els certificats digitals emesos per una Autoritat Certificadora (CA) permeten es
 Hi ha diverses opcions per obtenir certificats SSL/TLS:
 
 1. **Let's Encrypt:** Gratuït, automatitzat i vàlid durant 90 dies. El recomano.
-2. **Certificats comercials:** El generen CA's com Comodo, DigiCert, etc. Els demanen la majoria d'empreses i disposen normalment d'una valdiesa d'1 any.
-3. **Certificats autosignats:** Només s'ha d'utilitzar per desenvolupament i per realitzar proves amb aplicacions internes.
+2. **Certificats comercials:** Els generen CA com DigiCert, Sectigo, etc. Els demanen la majoria d'empreses.
+   - Des del 15 de març de 2026, la validesa màxima d'un certificat públic és de **200 dies**.
+   - Baixarà a 100 dies el 2027 i a 47 dies el 2029 (acord del CA/Browser Forum).
+   - Per això la renovació automàtica és cada vegada més important.
+3. **Certificats autosignats:** Només s'ha d'utilitzar per desenvolupament i per realitzar proves amb aplicacions internes (apartat 12).
 
 ### Let's Encrypt amb Certbot
 
@@ -38,34 +48,34 @@ sudo apt install python3-certbot-nginx
 
 ```bash
 # Automàtic (configura Apache automàticament i les redireccions)
-sudo certbot --apache -d exemple1.cat -d www.exemple1.cat
+sudo certbot --apache -d example.com -d www.example.com
 
 # Només s'obté el certificat (s'ha de fer la configuració manual)
-sudo certbot certonly --apache -d exemple1.cat -d www.exemple1.cat
+sudo certbot certonly --apache -d example.com -d www.example.com
 ```
 
 **Obtenir certificat (Nginx):**
 
 ```bash
 # Automàtic
-sudo certbot --nginx -d exemple1.cat -d www.exemple1.cat
+sudo certbot --nginx -d example.com -d www.example.com
 
 # Manual
-sudo certbot certonly --nginx -d exemple1.cat -d www.exemple1.cat
+sudo certbot certonly --nginx -d example.com -d www.example.com
 ```
 
 **Obtenir certificat (mode standalone amb el servidor aturat):**
 
 ```bash
 sudo systemctl stop apache2  # o nginx
-sudo certbot certonly --standalone -d exemple1.cat -d www.exemple1.cat
+sudo certbot certonly --standalone -d example.com -d www.example.com
 sudo systemctl start apache2
 ```
 
 **Renovació automàtica:**
 
 ```bash
-# Certbot crea un cron automàticament
+# Certbot instal·la un temporitzador de systemd que renova els certificats automàticament
 # Verificar el temporitzador:
 sudo systemctl status certbot.timer
 
@@ -79,37 +89,39 @@ sudo certbot renew
 **Ubicació dels certificats:**
 
 ```
-/etc/letsencrypt/live/exemple1.cat/
+/etc/letsencrypt/live/example.com/
 ├── cert.pem          # Certificat del lloc
 ├── chain.pem         # Cadena de certificació
 ├── fullchain.pem     # cert.pem + chain.pem
-└── privy.pem         # Clau privada
+└── privkey.pem       # Clau privada
 ```
 
 ### Configurar SSL/TLS amb Apache
 
-**Activar mòdul SSL:**
+**Activar els mòduls SSL i headers:**
 
 ```bash
-sudo a2enmod ssl
+sudo a2enmod ssl headers
 sudo systemctl restart apache2
 ```
+
+La capçalera HSTS de l'exemple fa servir la directiva `Header`, del mòdul `mod_headers`. Si el mòdul no està activat, Apache no arrenca (`Invalid command 'Header'`).
 
 **Virtual Host amb HTTPS:**
 
 ```apache
 <VirtualHost *:443>
-    ServerName exemple1.cat
-    ServerAlias www.exemple1.cat
+    ServerName example.com
+    ServerAlias www.example.com
 
-    DocumentRoot /var/www/exemple1.cat/html
+    DocumentRoot /var/www/example.com/html
 
     # SSL
     SSLEngine on
 
     # Certificats Let's Encrypt
-    SSLCertificateFile /etc/letsencrypt/live/exemple1.cat/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/exemple1.cat/privkey.pem
+    SSLCertificateFile /etc/letsencrypt/live/example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/example.com/privkey.pem
 
     # Protocols segurs (només TLS 1.2 i 1.3)
     SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
@@ -121,22 +133,22 @@ sudo systemctl restart apache2
     # HSTS (per forçar l'ús de HTTPS)
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
-    <Directory /var/www/exemple1.cat/html>
+    <Directory /var/www/example.com/html>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/exemple1.cat-ssl-error.log
-    CustomLog ${APACHE_LOG_DIR}/exemple1.cat-ssl-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/example.com-ssl-error.log
+    CustomLog ${APACHE_LOG_DIR}/example.com-ssl-access.log combined
 </VirtualHost>
 
 # Redirigir HTTP a HTTPS
 <VirtualHost *:80>
-    ServerName exemple1.cat
-    ServerAlias www.exemple1.cat
+    ServerName example.com
+    ServerAlias www.example.com
 
-    Redirect permanent / https://exemple1.cat/
+    Redirect permanent / https://example.com/
 </VirtualHost>
 ```
 
@@ -149,7 +161,7 @@ sudo systemctl restart apache2
 server {
     listen 80;
     listen [::]:80;
-    server_name exemple1.cat www.exemple1.cat;
+    server_name example.com www.example.com;
 
     return 301 https://$server_name$request_uri;
 }
@@ -159,13 +171,13 @@ server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
 
-    server_name exemple1.cat www.exemple1.cat;
-    root /var/www/exemple1.cat/html;
+    server_name example.com www.example.com;
+    root /var/www/example.com/html;
     index index.html index.php;
 
     # Certificats Let's Encrypt
-    ssl_certificate /etc/letsencrypt/live/exemple1.cat/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/exemple1.cat/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
 
     # Protocols segurs
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -174,14 +186,9 @@ server {
     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
     ssl_prefer_server_ciphers on;
 
-    # Cache de les sessions
+    # Memòria cau de les sessions
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
-
-    # OCSP Stapling
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    ssl_trusted_certificate /etc/letsencrypt/live/exemple1.cat/chain.pem;
 
     # HSTS
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
@@ -190,31 +197,39 @@ server {
         try_files $uri $uri/ =404;
     }
 
-    access_log /var/log/nginx/exemple1.cat-ssl-access.log;
-    error_log /var/log/nginx/exemple1.cat-ssl-error.log;
+    access_log /var/log/nginx/example.com-ssl-access.log;
+    error_log /var/log/nginx/example.com-ssl-error.log;
 }
 ```
+
+`Nota:` Let's Encrypt va deixar d'oferir el servei OCSP l'any 2025. Per això ja no cal configurar l'OCSP stapling (`ssl_stapling`) amb els seus certificats.
 
 ### Test de Seguretat SSL
 
 **SSL Labs (Test online):**
 
 ```
-https://www.ssllabs.com/ssltest/analyze.html?d=exemple1.cat
+https://www.ssllabs.com/ssltest/analyze.html?d=example.com
 ```
 
 **Amb openssl (En local):**
 
 ```bash
 # Comprovar certificat i negociació TLS
-openssl s_client -connect exemple1.cat:443 -servername exemple1.cat
+openssl s_client -connect example.com:443 -servername example.com
 
 # Enumerar (Verificar protocols i algorismes de xifrat)
-nmap --script ssl-enum-ciphers -p 443 exemple1.cat
+nmap --script ssl-enum-ciphers -p 443 example.com
 
 # Provar connexió TLS 1.2
-openssl s_client -connect exemple1.cat:443 -tls1_2
+openssl s_client -connect example.com:443 -tls1_2
 
 # Provar connexió TLS 1.3
-openssl s_client -connect exemple1.cat:443 -tls1_3
+openssl s_client -connect example.com:443 -tls1_3
+```
+
+Les ordres amb `openssl` i `nmap` també es poden provar al laboratori amb els certificats autosignats, per exemple:
+
+```bash
+openssl s_client -connect web1.educem.cat:443 -servername web1.educem.cat
 ```

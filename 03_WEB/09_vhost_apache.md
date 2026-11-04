@@ -5,84 +5,102 @@ Apache gestiona els Virtual Hosts mitjançant fitxers de configuració que defin
 **Apache disposa de 2 directoris que emmagatzemen tots els fitxers de configuració:**
 
 - **sites-available/**: Configuracions de tots els Virtual Hosts `disponibles`
-- **sites-enabled/**: Configuracions de tota els Virtual Hosts `actius`
+- **sites-enabled/**: Configuracions de tots els Virtual Hosts `actius`
+
+A l'exemple crearem dos llocs al servidor 0375: `web1.educem.cat` i `web2.educem.cat`.
 
 #### Crear Virtual Host
 
-**Pas 0: Aturar nginx i encende Apache**
+**Pas 1: Registres DNS dels llocs web**
 
-```bash
-sudo systemctl stop nginx
-sudo systemctl start apache2
+El client ha de poder resoldre els noms dels llocs. Al servidor DNS primari (Tema 1):
+
+1. Afegiu els registres a la zona `educem.cat` (`/etc/bind/zones/db.educem.cat`).
+2. **Incrementeu el serial**.
+
+```
+web1        IN  A       192.168.1.2
+web2        IN  A       192.168.1.2
 ```
 
-**Pas 1: Crear directori del lloc**
-
 ```bash
-sudo mkdir -p /var/www/exemple1.cat/html
-sudo mkdir -p /var/www/exemple2.cat/html
+# Al servidor DNS (0375)
+sudo named-checkzone educem.cat /etc/bind/zones/db.educem.cat
+sudo rndc reload
 
-# Establir el propietari
-sudo chown -R www-data:www-data /var/www/exemple1.cat
-sudo chown -R www-data:www-data /var/www/exemple2.cat
-
-# Permisos (executae després de crear fitxers i subdirectoris del web)
-sudo chmod -R 755 /var/www
+# Al client: comprovar la resolució
+dig +short web1.educem.cat
+dig +short web2.educem.cat
 ```
 
-**Pas 2: Crear pàgina d'exemple**
+`Nota:` No editeu `/etc/hosts` per fer les proves. Si el client tingués `127.0.0.1` per a aquests noms, intentaria connectar amb ell mateix.
+
+**Pas 2: Crear directori del lloc**
 
 ```bash
-# exemple1.at
-echo "<h1>Hola món! exemple1.cat</h1>" > /var/www/exemple1.cat/html/index.html
-
-# exemple2.cat
-echo "<h1>Hola món! exemple2.cat</h1>" > /var/www/exemple2.cat/html/index.html
+sudo mkdir -p /var/www/web1.educem.cat/html
+sudo mkdir -p /var/www/web2.educem.cat/html
 ```
 
-**Pas 3: Crear configuració Virtual Host**
+**Pas 3: Crear pàgina d'exemple**
 
 ```bash
-sudo nano /etc/apache2/sites-available/exemple1.cat.conf
+# web1.educem.cat
+echo "<h1>Hola món! web1.educem.cat</h1>" | sudo tee /var/www/web1.educem.cat/html/index.html
+
+# web2.educem.cat
+echo "<h1>Hola món! web2.educem.cat</h1>" | sudo tee /var/www/web2.educem.cat/html/index.html
+
+# Comprovar permisos: Apache (usuari www-data) ha de poder llegir els fitxers (644) i les carpetes (755)
+ls -l /var/www/web1.educem.cat/html/
+```
+
+`Nota:` Escrivim amb `sudo tee` perquè la carpeta és de root. Amb `echo ... > fitxer` sense `sudo`, la redirecció la fa l'usuari normal i dona `Permission denied`.
+
+**Pas 4: Crear configuració Virtual Host**
+
+```bash
+sudo nano /etc/apache2/sites-available/web1.educem.cat.conf
 ```
 
 ```apache
 <VirtualHost *:80>
     # Nom del servidor
-    ServerName exemple1.cat
-    ServerAlias www.exemple1.cat
+    ServerName web1.educem.cat
 
     # Email de l'administrador
-    ServerAdmin admin@exemple1.cat
+    ServerAdmin admin@educem.cat
 
     # Document root
-    DocumentRoot /var/www/exemple1.cat/html
+    DocumentRoot /var/www/web1.educem.cat/html
 
     # Configuració del directori
-    <Directory /var/www/exemple1.cat/html>
+    <Directory /var/www/web1.educem.cat/html>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 
     # Logs específics
-    ErrorLog ${APACHE_LOG_DIR}/exemple1.cat-error.log
-    CustomLog ${APACHE_LOG_DIR}/exemple1.cat-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/web1.educem.cat-error.log
+    CustomLog ${APACHE_LOG_DIR}/web1.educem.cat-access.log combined
 </VirtualHost>
 ```
 
-**Repeteix el procés per l'exemple2.cat:**
+`Nota:` Si el lloc té altres noms (per exemple `www.web1.educem.cat`), s'afegeixen amb `ServerAlias` i cal crear també el registre DNS corresponent.
+
+**Repeteix el procés per web2.educem.cat** (canviant `web1` per `web2` a tot el fitxer):
 
 ```bash
-sudo nano /etc/apache2/sites-available/exemple2.cat.conf
+sudo nano /etc/apache2/sites-available/web2.educem.cat.conf
 ```
 
-**Pas 4: Activar els Virtual Hosts**
+**Pas 5: Activar els Virtual Hosts**
 
 ```bash
 # Activar els llocs web
-sudo a2ensite exemple1.cat.conf
-sudo a2ensite exemple2.cat.conf
+sudo a2ensite web1.educem.cat.conf
+sudo a2ensite web2.educem.cat.conf
 
 # Desactivar lloc per defecte (opcional)
 sudo a2dissite 000-default.conf
@@ -90,25 +108,29 @@ sudo a2dissite 000-default.conf
 # Verificar si hi ha errors de configuració
 sudo apache2ctl configtest
 
+# Veure els Virtual Hosts carregats
+sudo apache2ctl -S
+
 # Recarregar Apache (també es pot reiniciar amb restart)
 sudo systemctl reload apache2
 ```
 
-**Pas 5: Configurar DNS/hosts al servidor i al client**
+**Notes:**
+
+- Si desactiveu `000-default`, les peticions que no coincideixen amb cap `ServerName` (per exemple, `http://192.168.1.2`) les respon el primer VirtualHost carregat (`web1`).
+- L'avís `AH00558: Could not reliably determine the server's fully qualified domain name` no és cap error. Desapareix si definiu un `ServerName` global:
 
 ```bash
-# Per proves locals, editar /etc/hosts
-# Per la pràctica haureu de tenir el servidor DNS operatiu
-sudo nano /etc/hosts
-
-# Afegir:
-127.0.0.1    exemple1.cat www.exemple1.cat
-127.0.0.1    exemple2.cat www.exemple2.cat
+echo "ServerName web1.educem.cat" | sudo tee /etc/apache2/conf-available/servername.conf
+sudo a2enconf servername
+sudo systemctl reload apache2
 ```
 
 **Pas 6: Proves al servidor i al client**
 
 ```bash
-curl http://exemple1.cat
-curl http://exemple2.cat
+curl http://web1.educem.cat
+curl http://web2.educem.cat
 ```
+
+Al servidor, els noms es resolen amb el seu propi BIND (netplan del Tema 1). Al client, també es pot provar des del navegador.

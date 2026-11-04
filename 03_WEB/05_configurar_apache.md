@@ -15,8 +15,10 @@ Timeout 300
 
 # Mantenir les connexions vives
 KeepAlive On
-MaxKeepAliveRequests 100 #Màxim número de peticions per connexió
-KeepAliveTimeout 5 #Segons d'espera de noves peticions abans de tancar connexió
+# Màxim número de peticions per connexió
+MaxKeepAliveRequests 100
+# Segons d'espera de noves peticions abans de tancar connexió
+KeepAliveTimeout 5
 
 # Usuari i grup que executa Apache (amb permisos limitats)
 User www-data
@@ -46,6 +48,8 @@ LogFormat "%h %l %u %t \"%r\" %>s %b" common
 LogFormat "%{Referer}i -> %U" referer
 LogFormat "%{User-agent}i" agent
 ```
+
+`Nota:` A Apache, els comentaris (`#`) han d'anar en una línia pròpia. Un comentari al final d'una directiva fa que la configuració doni error.
 
 ### Directiva Directory
 
@@ -94,7 +98,7 @@ Controla el comportament d'un directori específic i permet establir uns control
 | `Require all granted`      | Permet accés a tots els clients.            |
 | `Require all denied`       | Denega l'accés a tothom.                    |
 | `Require ip 192.168.1`     | Només permet accés a IPs de la xarxa local. |
-| `Require host exemple.cat` | Només permet accés als hostnames indicats.  |
+| `Require host educem.cat`  | Només permet accés als hostnames indicats.  |
 
 ### Fitxer .htaccess
 
@@ -103,6 +107,15 @@ Fitxer de configuració per directori que Apache llegeix cada vegada que es fa u
 Permet fer configuracions específiques, sense modificar el fitxer global (apache2.conf).
 
 Funciona només si AllowOverride està activat pel directori en qüestió.
+
+**Mòduls necessaris:** l'exemple fa servir directives de `mod_rewrite` (`RewriteEngine`) i de `mod_headers` (`Header`). A Ubuntu no estan activats per defecte. Si el `.htaccess` conté una directiva d'un mòdul que no està carregat, totes les pàgines del directori donen `500 Internal Server Error`.
+
+```bash
+sudo a2enmod rewrite headers
+sudo systemctl restart apache2
+```
+
+La redirecció a HTTPS de l'exemple només té sentit quan el lloc ja té HTTPS configurat (apartat 11).
 
 **Exemple `/var/www/html/.htaccess` o valors d'un VirtualHost:**
 
@@ -113,7 +126,7 @@ Options -Indexes
 # Protecció contra hotlinking (evita que altres webs enllacin directament imatges del teu servidor)
 RewriteEngine On
 RewriteCond %{HTTP_REFERER} !^$
-RewriteCond %{HTTP_REFERER} !^http(s)?://(www\.)?exemple\.cat [NC]
+RewriteCond %{HTTP_REFERER} !^http(s)?://([a-z0-9-]+\.)?educem\.cat [NC]
 RewriteRule \.(jpg|jpeg|png|gif)$ - [F]
 
 # Redirecció HTTPS (força que totes les peticions siguin per HTTPS)

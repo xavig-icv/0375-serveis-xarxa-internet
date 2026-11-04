@@ -68,19 +68,19 @@ http {
 
 ### Bloc Server (Virtual Host)
 
-El fitxer `/etc/nginx/sites-available/default` equival al fitxer de Virtual Host d'Apache.
+Cada lloc web té un fitxer a `/etc/nginx/sites-available/` amb el seu bloc `server`, que equival al fitxer de Virtual Host d'Apache. El fitxer `default` conté el lloc per defecte.
 
 ```nginx
 server {
-    # Port d'escolta
-    listen 80 default_server;
-    listen [::]:80 default_server;
+    # Port d'escolta (al laboratori, 8080: el port 80 és d'Apache)
+    listen 8080;
+    listen [::]:8080;
 
     # Nom del servidor (domini)
-    server_name exemple.cat www.exemple.cat;
+    server_name web1.educem.cat;
 
     # Document root (directori arrel amb els documents web)
-    root /var/www/html;
+    root /var/www/web1.educem.cat/html;
 
     # Fitxers d'índex (llista de fitxers que busca nginx com a índex)
     index index.html index.htm index.php;
@@ -92,10 +92,12 @@ server {
     }
 
     # Logs específics del virtual host (accessos i errors)
-    access_log /var/log/nginx/exemple.cat-access.log;
-    error_log /var/log/nginx/exemple.cat-error.log;
+    access_log /var/log/nginx/web1.educem.cat-access.log;
+    error_log /var/log/nginx/web1.educem.cat-error.log;
 }
 ```
+
+`default_server` a la línia `listen` indica quin bloc respon les peticions que no coincideixen amb cap `server_name`. Al laboratori, aquest paràmetre el té el lloc `default` (apartat 04).
 
 ### Bloc Location
 
@@ -145,17 +147,19 @@ Les variables de Nginx són valors dinàmics que representen informació de la p
 **Exemple:**
 
 ```
-http://www.exemple.cat/producte.php?id=5
+http://web1.educem.cat:8080/producte.php?id=5
 ```
 
 - $request_uri → /producte.php?id=5
 - $uri → /producte.php
 - $args → id=5
 
+Exemple d'ús dins del bloc `server` d'un lloc (no creeu un altre bloc `server` amb el mateix nom i port):
+
 ```nginx
 server {
-    listen 80;
-    server_name exemple.cat;
+    listen 8080;
+    server_name web1.educem.cat;
 
     location / {
         # Variables disponibles:
@@ -192,7 +196,7 @@ sudo nginx -s quit
 # Aturar (immediately)
 sudo nginx -s stop
 
-# Reopenir logs
+# Tornar a obrir els fitxers de log
 sudo nginx -s reopen
 
 # Veure configuració compilada
