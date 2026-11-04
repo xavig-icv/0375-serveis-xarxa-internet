@@ -53,10 +53,11 @@ Són dominis associats a un país o territori (segons el codi ISO-3166).
 | Extensió | País o regió | Exemple      |
 | -------- | ------------ | ------------ |
 | `.es`    | Espanya      | `rtve.es`    |
-| `.cat`   | Catalunya    | `gencat.cat` |
 | `.uk`    | Regne Unit   | `bbc.co.uk`  |
 | `.fr`    | França       | `lemonde.fr` |
 | `.de`    | Alemanya     | `dw.de`      |
+
+> Nota: `.cat` **no és un ccTLD**. És un domini genèric patrocinat (sTLD), aprovat el 2005 per a la comunitat lingüística i cultural catalana i gestionat per la Fundació puntCAT (exemple: `gencat.cat`).
 
 #### Nous gTLD acceptats
 

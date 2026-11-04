@@ -14,6 +14,16 @@
 | `07_AUDIO/`       | Administració de serveis d'àudio: streaming, formats digitals, podcasting                       | 8     | RA7 |
 | `08_VIDEO/`       | Administració de serveis de vídeo: streaming, videoconferència, formats de compressió           | 8     | RA8 |
 
+## Escenari del Laboratori
+
+Tots els temes fan servir el mateix escenari i el domini `educem.cat`:
+
+- **Servidor 0375** (`192.168.1.2`): primari de tots els serveis.
+- **Servidor 0374** (`192.168.1.1`): gateway amb NAT i secundari.
+- **Client Ubuntu**: a la xarxa interna `192.168.1.0/24`.
+
+Detall: [00_RECURSOS/01_escenari_laboratori.md](./00_RECURSOS/01_escenari_laboratori.md).
+
 ## Continguts del Mòdul
 
 `Tema 1` Instal·lació i administració de serveis de noms de dominis (DNS)  

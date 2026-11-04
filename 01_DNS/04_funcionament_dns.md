@@ -65,7 +65,7 @@ ns2.dept.exemple.cat. IN    A     192.168.10.2
 #### Els 13 Servidors Arrel
 
 Els root servers són el punt inicial de tota resolució DNS.
-Encara que hi ha 13 noms lògics (a.root-servers.net fins m.root-servers.net), existeixen més de 1000 rèpliques distribuïdes arreu del món (anycast) per millorar la disponibilitat.Els servidors arrel (de `a.root-servers.net` a `m.root-servers.net`) són el punt de partida de tota resolució DNS.
+Encara que hi ha 13 noms lògics (de `a.root-servers.net` a `m.root-servers.net`), existeixen més de 1000 rèpliques distribuïdes arreu del món (anycast) per millorar la disponibilitat.
 
 ```
 Servidors Arrel (13 lletres):
@@ -83,7 +83,7 @@ m.root-servers.net → 202.12.27.33
          ↓
 2. Resolver consulta Root Server
          ↓
-3. Root responde: "Pregunta al servidor .cat"
+3. Root respon: "Pregunta al servidor .cat"
          ↓
 4. Resolver consulta TLD server (.cat)
          ↓
@@ -91,7 +91,7 @@ m.root-servers.net → 202.12.27.33
          ↓
 6. Resolver consulta Authoritative server
          ↓
-7. Authoritative respon: "www.example.com = 174.18.120.12"
+7. Authoritative respon: "www.exemple.cat = 174.18.120.12"
          ↓
 8. Client rep la IP i connecta
 ```

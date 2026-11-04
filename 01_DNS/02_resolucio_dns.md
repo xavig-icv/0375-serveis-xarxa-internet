@@ -21,13 +21,12 @@
 
 ```
 127.0.0.1       localhost
-192.168.1.10    servidor.local servidor
-192.168.1.20    web.local
-192.168.1.30    mail.local
+192.168.1.2     ns1.educem.cat ns1
+192.168.1.1     ns2.educem.cat ns2
 192.168.1.40    google.com
 ```
 
-Si fem un `ping google.com` primer es consultaria el fitxer `/etc/hosts` abans que el servei de DNS.
+Si fem un `ping google.com` primer es consultaria el fitxer `/etc/hosts` abans que el servei de DNS. L'ordre de consulta el defineix la línia `hosts:` de `/etc/nsswitch.conf` (`files` abans que `dns`).
 
 ### Resolució Dinàmica (Domain Name System)
 

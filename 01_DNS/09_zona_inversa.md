@@ -10,6 +10,7 @@ zone "1.168.192.in-addr.arpa" {
     type master;
     file "/etc/bind/zones/db.192.168.1";
     allow-transfer { 192.168.1.1; };
+    also-notify { 192.168.1.1; };
 };
 ```
 
@@ -19,28 +20,25 @@ zone "1.168.192.in-addr.arpa" {
 
 ```
 $TTL 86400
-@   IN  SOA ns1.xavig.cat. admin.xavig.cat. (
-            2025101001  ; Serial
+@   IN  SOA ns1.educem.cat. admin.educem.cat. (
+            2026110401  ; Serial
             3600        ; Refresh
             1800        ; Retry
             604800      ; Expire
-            86400 )     ; Negative Cache TTL
+            300 )       ; Negative Cache TTL
 
 ; Name Servers
-@       IN  NS      ns1.xavig.cat.
-@       IN  NS      ns2.xavig.cat.
+@       IN  NS      ns1.educem.cat.
+@       IN  NS      ns2.educem.cat.
 
 ; PTR Records (Reverse DNS)
-2      IN  PTR     ns1.xavig.cat.
-1      IN  PTR     ns2.xavig.cat.
-10     IN  PTR     www.xavig.cat.
-11     IN  PTR     mail.xavig.cat.
-12     IN  PTR     ftp.xavig.cat.
-13     IN  PTR     proxy.xavig.cat.
-14     IN  PTR     bbdd.xavig.cat.
+2       IN  PTR     ns1.educem.cat.
+1       IN  PTR     ns2.educem.cat.
+50      IN  PTR     client.educem.cat.
 ```
 
 **Notes:**
 
-- El nom de la zona són 3 octets de la IP de xarxa invertida + `.in-addr.arpa`
-- Els PTR només necessiten l'últim octet de la IP
+- El nom de la zona són els 3 octets de la IP de xarxa en ordre invers, seguits de `.in-addr.arpa`.
+- Els PTR només necessiten l'últim octet de la IP.
+- Cada IP ha de tenir **un sol PTR**. La `192.168.1.2` té diversos noms (`ns1`, `www`, `mail`, `ftp`), però a la zona inversa només hi posem el nom principal del servidor.

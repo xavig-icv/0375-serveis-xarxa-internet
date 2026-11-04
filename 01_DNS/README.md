@@ -1,5 +1,7 @@
 # 01 SERVEIS DNS - Administració de Serveis de Resolució de Noms
 
+> Escenari del laboratori (IPs, domini `educem.cat` i netplan): [00_RECURSOS/01_escenari_laboratori.md](../00_RECURSOS/01_escenari_laboratori.md)
+
 ## Index de Continguts
 
 [01. Introducció als Serveis de Resolució de Noms](./01_intro_dns.md)

@@ -57,6 +57,12 @@ nameserver 1.1.1.1
 search local.domain
 ```
 
+`Nota:` A Ubuntu, `/etc/resolv.conf` el gestiona **systemd-resolved**:
+
+- El fitxer conté `nameserver 127.0.0.53`, que és el resolver local de l'equip.
+- Els servidors DNS reals es consulten amb `resolvectl dns` (o `resolvectl status`).
+- Aquests servidors es configuren amb netplan (Tema 1, apartat 07), no editant el fitxer a mà.
+
 ### Cache DNS i Optimització
 
 #### Funcionament del Cache

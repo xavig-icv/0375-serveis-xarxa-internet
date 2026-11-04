@@ -34,7 +34,7 @@ sudo ss -plutn
 
 ### Estructura de Fitxers de BIND
 
-L'arxiu principal de BIND és `/etc/bind/named.conf`, que inclou referències a altres fitxers i defineix com s'ha de comportar el servidor DNS. La carpeta `/etc/bind()` inclou:
+L'arxiu principal de BIND és `/etc/bind/named.conf`, que inclou referències a altres fitxers i defineix com s'ha de comportar el servidor DNS. La carpeta `/etc/bind/` inclou:
 
 ```
 /etc/bind/
@@ -42,9 +42,9 @@ L'arxiu principal de BIND és `/etc/bind/named.conf`, que inclou referències a 
 ├── named.conf.options         # Opcions globals (forwarders, listen-on, etc.)
 ├── named.conf.local           # Zones locals (dominis que volem gestionar)
 ├── named.conf.default-zones   # Zones per defecte (localhost, reverse lookup)
-└── zones/                     # Fitxers de zona amb registres DNS
-    ├── db.example.com         # Exemple de fitxer de zona per example.com (zona directa)
-    └── db.192.168.1           # Exemple de fitxer de zona inversa per xarxa 192.168.1.0/24
+└── zones/                     # Fitxers de zona amb registres DNS (la creem nosaltres)
+    ├── db.educem.cat          # Fitxer de zona directa del domini educem.cat
+    └── db.192.168.1           # Fitxer de zona inversa de la xarxa 192.168.1.0/24
 ```
 
 #### Detalls de cada fitxer
@@ -73,6 +73,6 @@ L'arxiu principal de BIND és `/etc/bind/named.conf`, que inclou referències a 
   - Zona inversa per IPv6 `::1`
 
 - **zones/**  
-  Carpeta on es guarden els fitxers de zona:
-  - `db.example.com`: fitxer de zona directa per al domini `example.com`. Conté registres **A, AAAA, MX, CNAME, NS**, etc.
+  Carpeta on es guarden els fitxers de zona (no existeix per defecte: la crearem a l'apartat 08):
+  - `db.educem.cat`: fitxer de zona directa per al domini `educem.cat`. Conté registres **A, AAAA, MX, CNAME, NS**, etc.
   - `db.192.168.1`: fitxer de zona inversa per a la xarxa 192.168.1.0/24. Permet resoldre IP → nom (PTR).
