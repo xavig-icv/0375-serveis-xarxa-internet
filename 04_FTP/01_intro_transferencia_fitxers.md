@@ -132,7 +132,7 @@ Durant tot el tema treballarem amb el mateix escenari dels temes anteriors. El s
      ┌─────────────────────────────────┼───────────────────────────────┐
      │                                 │                               │
 SERVIDOR 0375 (192.168.1.2)      SERVIDOR 0374 (192.168.1.1)     CLIENT (DHCP)
-Ubuntu Server / Debian           DNS secundari (Tema 1)          192.168.1.1xx
+Primari dels serveis 0375        Gateway (NAT) + secundari       192.168.1.1xx
   ├─ vsftpd   → FTP/FTPS  21 + 40000-40100/tcp                   Ubuntu Desktop / Windows
   ├─ OpenSSH  → SFTP      22/tcp                                   ├─ ftp, lftp, curl
   ├─ tftpd-hpa→ TFTP      69/udp                                   ├─ sftp, scp

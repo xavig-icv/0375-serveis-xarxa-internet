@@ -150,12 +150,13 @@ sudo nano /etc/default/tftpd-hpa
 TFTP_USERNAME="tftp"
 TFTP_DIRECTORY="/srv/tftp"
 TFTP_ADDRESS="192.168.1.2:69"
-TFTP_OPTIONS="--secure --create --umask 077"
+TFTP_OPTIONS="--secure --create --permissive --umask 077"
 ```
 
 - `TFTP_ADDRESS="192.168.1.2:69"`: escolta **només a la interfície interna**.
 - `--create`: permet crear fitxers nous (només on l'usuari `tftp` té permís d'escriptura, és a dir, a `configs`).
 - `--umask 077`: els fitxers rebuts només els pot llegir l'usuari `tftp` (les configuracions solen contenir contrasenyes).
+- `--permissive`: imprescindible amb `--umask 077`. Sense aquesta opció, tftpd-hpa exigeix que tots els fitxers siguin llegibles i modificables per **tothom** (permisos `666`). Un fitxer creat amb permisos `600` no ho compleix i la pujada falla amb `File must have global write permissions`. Amb `--permissive` només s'apliquen els permisos normals del sistema per a l'usuari `tftp`.
 
 ```bash
 sudo systemctl restart tftpd-hpa
@@ -205,9 +206,14 @@ TFTP **no té cap mecanisme de seguretat**: qualsevol equip que pugui arribar al
 
 - El nom no és exacte (TFTP distingeix majúscules i minúscules) o el fitxer no és dins de `/srv/tftp`.
 
+**`Error code 2: File must have global read permissions` / `File must have global write permissions`**
+
+- Sense `--permissive`, tftpd-hpa només serveix fitxers llegibles per tothom i només accepta pujades a fitxers modificables per tothom. Doneu permisos `644` als fitxers de descàrrega, o afegiu `--permissive` si feu servir `--umask 077` (pas 3).
+- Si la pujada ha fallat, pot haver quedat un fitxer buit a `configs/`: esborreu-lo abans de tornar-ho a provar.
+
 **`Error code 2: Access violation` / `Permission denied`**
 
-- El fitxer no és llegible per l'usuari `tftp`, o s'intenta pujar un fitxer sense `--create` o a una carpeta on `tftp` no pot escriure.
+- S'intenta pujar un fitxer sense `--create`, o a una carpeta on l'usuari `tftp` no pot escriure.
 
 ### Punt de Control
 
