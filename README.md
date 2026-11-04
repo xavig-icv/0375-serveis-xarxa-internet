@@ -8,7 +8,7 @@
 | `01_DNS/`         | Administració de serveis de resolució de noms: DNS, BIND, zones, registres                      | 8     | RA1 |
 | `02_DHCP/`        | Administració de serveis de configuració automàtica: DHCP, assignacions estàtiques i dinàmiques | 8     | RA2 |
 | `03_WEB/`         | Administració de servidors web: Apache/Nginx, llocs virtuals, SSL/TLS, autenticació             | 10    | RA3 |
-| `04_FTP/`         | Administració de serveis de transferència de fitxers: FTP, SFTP, usuaris, permisos              | 8     | RA4 |
+| `04_FTP/`         | Administració de serveis de transferència de fitxers: FTP, FTPS, SFTP, TFTP, usuaris, quotes    | 8     | RA4 |
 | `05_CORREU/`      | Administració de servidors de correu electrònic: Postfix, Dovecot, protocols SMTP/POP3/IMAP     | 8     | RA5 |
 | `06_MISSATGERIA/` | Administració de serveis de missatgeria instantània, notícies i llistes de distribució          | 8     | RA6 |
 | `07_AUDIO/`       | Administració de serveis d'àudio: streaming, formats digitals, podcasting                       | 8     | RA7 |
