@@ -1,5 +1,7 @@
 # 04 TRANSFERÈNCIA DE FITXERS - Administració de Serveis FTP, FTPS, SFTP i TFTP
 
+> Escenari del laboratori (IPs, domini `educem.cat`, `ftp.educem.cat` → `192.168.1.2`): [00_RECURSOS/01_escenari_laboratori.md](../00_RECURSOS/01_escenari_laboratori.md)
+
 ## Índex de continguts
 
 1. [Introducció als Serveis de Transferència de Fitxers](./01_intro_transferencia_fitxers.md)

@@ -44,12 +44,12 @@ sudo mkdir -p /srv/ftp/pub
 sudo chmod 755 /srv/ftp/pub
 
 # Fitxers de prova per descarregar
-echo "Manual d'ús de la xarxa de domini.cat" | sudo tee /srv/ftp/pub/manual.txt
+echo "Manual d'ús de la xarxa d'educem.cat" | sudo tee /srv/ftp/pub/manual.txt
 sudo dd if=/dev/urandom of=/srv/ftp/pub/fitxer_10MB.bin bs=1M count=10 status=none
 sudo chmod 644 /srv/ftp/pub/*
 
 # Missatge de benvinguda (es mostra en entrar a la carpeta, dirmessage_enable=YES)
-echo "Zona de descàrregues públiques de domini.cat" | sudo tee /srv/ftp/pub/.message
+echo "Zona de descàrregues públiques d'educem.cat" | sudo tee /srv/ftp/pub/.message
 ```
 
 ### Pas 2: Activar l'Accés Anònim (Només Descàrrega)
@@ -84,7 +84,7 @@ $ ftp 192.168.1.2
 Name (192.168.1.2:alumne): anonymous
 230 Login successful.
 ftp> cd pub
-250-Zona de descàrregues públiques de domini.cat
+250-Zona de descàrregues públiques d'educem.cat
 250 Directory successfully changed.
 ftp> ls
 -rw-r--r--    1 ftp      ftp      10485760 Oct 09 12:00 fitxer_10MB.bin

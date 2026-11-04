@@ -104,7 +104,7 @@ TFTP_OPTIONS="--secure"
 
 ```bash
 # Crear fitxers de prova a la carpeta del servei
-echo "Fitxer de prova TFTP de domini.cat" | sudo tee /srv/tftp/prova.txt
+echo "Fitxer de prova TFTP d'educem.cat" | sudo tee /srv/tftp/prova.txt
 sudo mkdir -p /srv/tftp/firmware
 echo "firmware v2.1" | sudo tee /srv/tftp/firmware/switch-v2.1.bin
 

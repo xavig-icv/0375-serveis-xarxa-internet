@@ -7,7 +7,7 @@
 Abans de començar, comproveu que el servidor 0375 té:
 
 - IP estàtica a la interfície interna (`192.168.1.2/24` a `enp0s8`).
-- Resolució de noms funcionant (Tema 1). Opcional però recomanat: registre `ftp.domini.cat`.
+- Resolució de noms funcionant (Tema 1), amb el registre `ftp.educem.cat`.
 - Accés a Internet per instal·lar paquets.
 
 ```bash
@@ -15,7 +15,7 @@ Abans de començar, comproveu que el servidor 0375 té:
 ip -4 addr show enp0s8
 
 # Comprovar la resolució del nom (des del servidor o des del client)
-dig +short ftp.domini.cat
+dig +short ftp.educem.cat
 ```
 
 ### Instal·lació a Debian/Ubuntu

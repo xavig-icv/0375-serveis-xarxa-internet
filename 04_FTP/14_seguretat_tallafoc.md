@@ -52,20 +52,24 @@ sudo ufw allow from 192.168.1.0/24 to any port 40000:40100 proto tcp
 
 # 3. TFTP només des de la xarxa interna
 sudo ufw allow from 192.168.1.0/24 to any port 69 proto udp
+```
 
-# 4. Activar el tallafoc i comprovar les regles
+**Atenció:** en activar `ufw` es bloquejaran **tots** els serveis que no tinguin una regla. El servidor 0375 també té els serveis dels altres temes: afegiu-ne les regles **abans** d'activar el tallafoc.
+
+```bash
+# 4. Serveis dels altres temes
+sudo ufw allow 53                                       # DNS (Tema 1), TCP i UDP
+sudo ufw allow 67/udp                                   # DHCP (Tema 2)
+sudo ufw allow from 192.168.1.1 to any port 647 proto tcp  # Failover DHCP amb el 0374 (Tema 2)
+sudo ufw allow 80,443,8080,8443/tcp                     # Web: Apache i Nginx (Tema 3)
+sudo ufw allow 25,587,993,995/tcp                       # Correu (Tema 5); afegiu 110 i 143 si els feu servir
+
+# 5. Activar el tallafoc i comprovar les regles
 sudo ufw enable
 sudo ufw status numbered
 ```
 
-**Atenció:** en activar `ufw` es bloquejaran **tots** els serveis que no tinguin una regla. Afegiu també les regles dels serveis dels altres temes que tingueu al servidor:
-
-```bash
-sudo ufw allow 53                  # DNS (Tema 1), TCP i UDP
-sudo ufw allow 67/udp              # DHCP (Tema 2)
-sudo ufw allow 80,443/tcp          # Web (Tema 3)
-sudo ufw allow 25,465,587,993/tcp  # Correu (Tema 5), segons els ports que feu servir
-```
+Després d'activar-lo, comproveu des del client que els serveis dels altres temes continuen funcionant (vegeu el "Pas 0" de l'[escenari del laboratori](../00_RECURSOS/01_escenari_laboratori.md)).
 
 **Mode actiu:** el servidor obre la connexió de dades **cap enfora** des del port 20. Com que `ufw` permet per defecte tot el trànsit sortint, no cal cap regla al servidor. El problema del mode actiu està en el tallafoc del **client**.
 
@@ -87,7 +91,7 @@ Els servidors FTP i SSH exposats reben contínuament intents automàtics d'endev
 
 ```
  Intents fallits             fail2ban                        Tallafoc
-/var/log/vsftpd.log ──► "FAIL LOGIN" 5 vegades ──► BAN 192.168.1.100 durant 10 min
+/var/log/vsftpd.log ──► "FAIL LOGIN" 5 vegades ──► BAN 192.168.1.50 durant 10 min
 journal (sshd)      ──► "Failed password" ...  ──►
 ```
 
@@ -155,10 +159,10 @@ sudo fail2ban-client status vsftpd
 # |  `- Total failed:     6
 # `- Actions
 #    |- Currently banned: 1
-#    `- Banned IP list:   192.168.1.100
+#    `- Banned IP list:   192.168.1.50
 
 # Desbloquejar una IP manualment
-sudo fail2ban-client set vsftpd unbanip 192.168.1.100
+sudo fail2ban-client set vsftpd unbanip 192.168.1.50
 
 # Veure l'activitat de fail2ban
 sudo tail -f /var/log/fail2ban.log
@@ -172,7 +176,7 @@ Resum de totes les directives configurades durant el tema (`/etc/vsftpd.conf`):
 
 ```
 # =====================================================
-# /etc/vsftpd.conf - Servidor FTP/FTPS de domini.cat
+# /etc/vsftpd.conf - Servidor FTP/FTPS d'educem.cat
 # =====================================================
 
 # --- MODE D'ESCOLTA (punt 14) ---
@@ -188,7 +192,7 @@ write_enable=YES
 local_umask=002
 
 # --- MISSATGES (punt 5) ---
-ftpd_banner=Benvinguts al servidor FTP de domini.cat
+ftpd_banner=Benvinguts al servidor FTP d'educem.cat
 dirmessage_enable=YES
 use_localtime=YES
 
@@ -303,7 +307,7 @@ Tot servei que es posa en producció s'ha de **documentar**, perquè qualsevol a
 | ---------------------- | ------------------------------------------------------------------------------ |
 | **Servidor**           | Nom, IP, sistema operatiu i versió                                             |
 | **Serveis i versions** | vsftpd x.y.z, OpenSSH x.y, tftpd-hpa x.y                                       |
-| **Noms DNS**           | `ftp.domini.cat`, `sftp.domini.cat`...                                          |
+| **Noms DNS**           | `ftp.educem.cat`, `sftp.educem.cat`...                                          |
 | **Ports**              | Taula de ports oberts i origen permès                                          |
 | **Usuaris**            | Usuari, tipus (local, anònim, SFTP, automàtic), carpeta, permisos, quota       |
 | **Carpetes**           | Ruta, propietari, permisos i finalitat                                         |
@@ -326,7 +330,7 @@ sudo ss -tulnp | grep -E 'vsftpd|sshd|in.tftpd'
 grep -Ev '^\s*(#|$)' /etc/vsftpd.conf
 
 # Configuració efectiva de sshd per a un usuari SFTP
-sudo sshd -T -C user=client1,host=client,addr=192.168.1.100 | grep -Ei 'chroot|forcecommand'
+sudo sshd -T -C user=client1,host=client,addr=192.168.1.50 | grep -Ei 'chroot|forcecommand'
 
 # Quotes de disc
 sudo repquota -s /

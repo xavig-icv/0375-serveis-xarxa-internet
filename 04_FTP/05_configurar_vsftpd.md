@@ -85,7 +85,7 @@ sudo nano /etc/vsftpd.conf
 
 ```
 # =====================================================
-# /etc/vsftpd.conf - Servidor FTP de domini.cat
+# /etc/vsftpd.conf - Servidor FTP d'educem.cat
 # =====================================================
 
 # --- MODE D'ESCOLTA ---
@@ -104,7 +104,7 @@ write_enable=YES
 local_umask=022
 
 # --- MISSATGES ---
-ftpd_banner=Benvinguts al servidor FTP de domini.cat
+ftpd_banner=Benvinguts al servidor FTP d'educem.cat
 dirmessage_enable=YES
 use_localtime=YES
 
@@ -152,12 +152,12 @@ Des del **client** de la xarxa interna, connecteu-vos amb l'usuari creat al punt
 ```bash
 ftp 192.168.1.2
 # o bé pel nom DNS
-ftp ftp.domini.cat
+ftp ftp.educem.cat
 ```
 
 ```
 Connected to 192.168.1.2.
-220 Benvinguts al servidor FTP de domini.cat
+220 Benvinguts al servidor FTP d'educem.cat
 Name (192.168.1.2:alumne): usuari1
 331 Please specify the password.
 Password:
@@ -188,12 +188,12 @@ sudo tail -f /var/log/vsftpd.log
 **Exemple de sortida** (amb `log_ftp_protocol=YES`):
 
 ```
-Fri Oct  9 10:15:02 2026 [pid 2210] CONNECT: Client "::ffff:192.168.1.100"
-Fri Oct  9 10:15:02 2026 [pid 2210] FTP response: Client "::ffff:192.168.1.100", "220 Benvinguts al servidor FTP de domini.cat"
-Fri Oct  9 10:15:05 2026 [pid 2210] FTP command: Client "::ffff:192.168.1.100", "USER usuari1"
-Fri Oct  9 10:15:07 2026 [pid 2210] FTP command: Client "::ffff:192.168.1.100", "PASS <password>"
-Fri Oct  9 10:15:07 2026 [pid 2209] [usuari1] OK LOGIN: Client "::ffff:192.168.1.100"
-Fri Oct  9 10:15:12 2026 [pid 2211] [usuari1] OK UPLOAD: Client "::ffff:192.168.1.100", "/home/usuari1/prova.txt", 10 bytes, 4.12Kbyte/sec
+Fri Oct  9 10:15:02 2026 [pid 2210] CONNECT: Client "::ffff:192.168.1.50"
+Fri Oct  9 10:15:02 2026 [pid 2210] FTP response: Client "::ffff:192.168.1.50", "220 Benvinguts al servidor FTP d'educem.cat"
+Fri Oct  9 10:15:05 2026 [pid 2210] FTP command: Client "::ffff:192.168.1.50", "USER usuari1"
+Fri Oct  9 10:15:07 2026 [pid 2210] FTP command: Client "::ffff:192.168.1.50", "PASS <password>"
+Fri Oct  9 10:15:07 2026 [pid 2209] [usuari1] OK LOGIN: Client "::ffff:192.168.1.50"
+Fri Oct  9 10:15:12 2026 [pid 2211] [usuari1] OK UPLOAD: Client "::ffff:192.168.1.50", "/home/usuari1/prova.txt", 10 bytes, 4.12Kbyte/sec
 ```
 
 **Missatges importants:**
@@ -228,7 +228,7 @@ telnet 192.168.1.2 21
 ```
 
 ```
-220 Benvinguts al servidor FTP de domini.cat
+220 Benvinguts al servidor FTP d'educem.cat
 USER usuari1
 331 Please specify the password.
 PASS LaVostraContrasenya
@@ -291,7 +291,7 @@ PASS LaVostraContrasenya
 Al **servidor**, captureu ara totes les connexions TCP amb el client (només les capçaleres):
 
 ```bash
-sudo tcpdump -i enp0s8 -nn 'host 192.168.1.100 and tcp[tcpflags] & tcp-syn != 0'
+sudo tcpdump -i enp0s8 -nn 'host 192.168.1.50 and tcp[tcpflags] & tcp-syn != 0'
 ```
 
 Al **client**, connecteu-vos i alterneu els modes amb l'ordre `passive` del client `ftp`:
@@ -312,10 +312,10 @@ ftp> ls
 
 ```
 # Mode actiu: el SERVIDOR (port 20) obre la connexió cap al client
-192.168.1.2.20 > 192.168.1.100.41235: Flags [S] ...
+192.168.1.2.20 > 192.168.1.50.41235: Flags [S] ...
 
 # Mode passiu: el CLIENT obre la connexió cap al port 40051 del servidor
-192.168.1.100.53120 > 192.168.1.2.40051: Flags [S] ...
+192.168.1.50.53120 > 192.168.1.2.40051: Flags [S] ...
 ```
 
 `Nota:` si el client té el tallafoc activat, el mode actiu fallarà (`425 Failed to establish connection`) perquè el servidor no pot obrir la connexió cap al client. És justament el problema que vam explicar al punt 3.

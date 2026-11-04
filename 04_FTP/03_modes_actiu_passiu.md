@@ -12,14 +12,14 @@ La connexió de **control** sempre l'obre el client cap al port 21 del servidor.
 És el mode original de l'FTP. El client obre un port local i li diu al servidor: "connecta't tu a mi en aquest port".
 
 ```
-CLIENT (192.168.1.100)                                SERVIDOR (192.168.1.2)
+CLIENT (192.168.1.50)                                 SERVIDOR (192.168.1.2)
 port aleatori 50000                                   port 21 (control)
       │                                                       │
-      │ 1. Connexió de control: 192.168.1.100:50000 → :21     │
+      │ 1. Connexió de control: 192.168.1.50:50000 → :21      │
       │──────────────────────────────────────────────────────>│
       │                                                       │
       │ 2. El client obre el port 50001 en escolta i envia:   │
-      │    PORT 192,168,1,100,195,81                          │
+      │    PORT 192,168,1,50,195,81                           │
       │──────────────────────────────────────────────────────>│
       │<─────────── 200 PORT command successful ──────────────│
       │                                                       │
@@ -27,7 +27,7 @@ port aleatori 50000                                   port 21 (control)
       │──────────────────────────────────────────────────────>│
       │                                                       │
       │ 4. El SERVIDOR obre la connexió de dades:             │
-      │    192.168.1.2:20  →  192.168.1.100:50001             │
+      │    192.168.1.2:20  →  192.168.1.50:50001              │
       │<══════════════════════════════════════════════════════│
       │                                                       │
 ```
@@ -35,9 +35,9 @@ port aleatori 50000                                   port 21 (control)
 **Com es calcula el port?** L'ordre `PORT` envia 6 números: els 4 primers són la IP i els 2 últims el port (p1, p2):
 
 ```
-PORT 192,168,1,100,195,81
+PORT 192,168,1,50,195,81
 
-IP   = 192.168.1.100
+IP   = 192.168.1.50
 Port = p1 × 256 + p2 = 195 × 256 + 81 = 49920 + 81 = 50001
 ```
 
@@ -53,10 +53,10 @@ Port = p1 × 256 + p2 = 195 × 256 + 81 = 49920 + 81 = 50001
 Per solucionar els problemes del mode actiu es va crear el mode passiu. Ara el client demana al servidor: "obre tu un port i jo m'hi connecto".
 
 ```
-CLIENT (192.168.1.100)                                SERVIDOR (192.168.1.2)
+CLIENT (192.168.1.50)                                 SERVIDOR (192.168.1.2)
 port aleatori 50000                                   port 21 (control)
       │                                                       │
-      │ 1. Connexió de control: 192.168.1.100:50000 → :21     │
+      │ 1. Connexió de control: 192.168.1.50:50000 → :21      │
       │──────────────────────────────────────────────────────>│
       │                                                       │
       │ 2. PASV                                               │
@@ -65,7 +65,7 @@ port aleatori 50000                                   port 21 (control)
       │<─── 227 Entering Passive Mode (192,168,1,2,156,64) ───│ port del rang passiu
       │                                                       │ (40000) en escolta
       │ 3. El CLIENT obre la connexió de dades:               │
-      │    192.168.1.100:50001  →  192.168.1.2:40000          │
+      │    192.168.1.50:50001  →  192.168.1.2:40000           │
       │══════════════════════════════════════════════════════>│
       │                                                       │
       │ 4. LIST / RETR / STOR                                 │

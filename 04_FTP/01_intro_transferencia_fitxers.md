@@ -124,7 +124,7 @@ No hi ha un únic protocol. Cada un neix en un context diferent i té avantatges
 
 ### Escenari de Pràctiques
 
-Durant tot el tema treballarem amb el mateix escenari dels temes anteriors. El servidor 0375 tindrà els serveis de transferència de fitxers i un client de la xarxa interna farà les proves.
+Durant tot el tema treballarem amb el mateix escenari dels temes anteriors ([escenari del laboratori](../00_RECURSOS/01_escenari_laboratori.md)). El servidor 0375 tindrà els serveis de transferència de fitxers i un client de la xarxa interna farà les proves.
 
 ```
                         Xarxa interna 192.168.1.0/24 (enp0s8)
@@ -132,7 +132,7 @@ Durant tot el tema treballarem amb el mateix escenari dels temes anteriors. El s
      ┌─────────────────────────────────┼───────────────────────────────┐
      │                                 │                               │
 SERVIDOR 0375 (192.168.1.2)      SERVIDOR 0374 (192.168.1.1)     CLIENT (DHCP)
-Primari dels serveis 0375        Gateway (NAT) + secundari       192.168.1.1xx
+Primari dels serveis 0375        Gateway (NAT) + secundari       192.168.1.50 (reserva)
   ├─ vsftpd   → FTP/FTPS  21 + 40000-40100/tcp                   Ubuntu Desktop / Windows
   ├─ OpenSSH  → SFTP      22/tcp                                   ├─ ftp, lftp, curl
   ├─ tftpd-hpa→ TFTP      69/udp                                   ├─ sftp, scp
@@ -140,16 +140,15 @@ Primari dels serveis 0375        Gateway (NAT) + secundari       192.168.1.1xx
   └─ Apache/Nginx → Web   (Tema 3)
 ```
 
-**Registres DNS recomanats** (afegiu-los a la vostra zona del Tema 1 i incrementeu el serial):
+**Registres DNS:** el registre `ftp` (cap a `192.168.1.2`) ja existeix a la zona `educem.cat` des del Tema 1, així que **no l'heu de tornar a afegir**. Afegiu-hi només els àlies i incrementeu el serial:
 
 ```
 ; Serveis de transferència de fitxers
-ftp         IN  A       192.168.1.2
 sftp        IN  CNAME   ftp
 tftp        IN  CNAME   ftp
 ```
 
-`Nota:` Substituïu `domini.cat` pel vostre domini i `192.168.1.2` per la IP del vostre servidor. Les ordres del tema estan escrites per a **Ubuntu Server 24.04 LTS** i **Debian 12/13**; quan hi ha diferències entre distribucions o versions, s'indiquen al mateix punt.
+`Nota:` Les ordres del tema estan escrites per a **Ubuntu Server 24.04 LTS** i **Debian 12/13**. Quan hi ha diferències entre distribucions o versions, s'indiquen al mateix punt.
 
 ### Ports Utilitzats en Transferència de Fitxers
 

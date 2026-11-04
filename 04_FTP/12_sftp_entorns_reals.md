@@ -44,7 +44,7 @@ SFTP rarament treballa sol. En una infraestructura real es combina amb la resta 
 
 ```
                          ┌──────────────────────────┐
-     DNS (Tema 1)  ─────►│ sftp.domini.cat → IP     │  Registres A/CNAME i SSHFP
+     DNS (Tema 1)  ─────►│ sftp.educem.cat → IP     │  Registres A/CNAME i SSHFP
                          └──────────────────────────┘
                                       │
   ┌──────────┐   SFTP (22) + claus    ▼                ┌────────────────────┐
@@ -60,7 +60,7 @@ SFTP rarament treballa sol. En una infraestructura real es combina amb la resta 
 
 | Combinació             | Com s'utilitza                                                                          |
 | ---------------------- | --------------------------------------------------------------------------------------- |
-| **SFTP + DNS**         | Nom estable (`sftp.domini.cat`) per als clients. Els registres **SSHFP** publiquen l'empremta de la clau del servidor (amb DNSSEC). |
+| **SFTP + DNS**         | Nom estable (`sftp.educem.cat`) per als clients. Els registres **SSHFP** publiquen l'empremta de la clau del servidor (amb DNSSEC). |
 | **SFTP + HTTP(S)**     | Els desenvolupadors pugen la web per SFTP i Apache/Nginx la serveixen. Els fitxers pujats es poden publicar per HTTPS. |
 | **SFTP + SMTP**        | Els scripts envien un correu quan arriba un fitxer o quan una còpia falla.              |
 | **SFTP + GPG/PGP**     | SFTP xifra el **transport**; GPG xifra el **fitxer**, que continua protegit quan ja és al servidor. Molt habitual en banca. |
@@ -319,17 +319,17 @@ diff -r ~/dades ~/restaurat/dades && echo "Restauració correcta"
 
 **Ampliacions possibles:**
 
-- Enviar un correu si la còpia falla (Tema 5): `trap 'echo "Error a la còpia" | mail -s "BACKUP FALLIT $(hostname)" admin@domini.cat' ERR`.
+- Enviar un correu si la còpia falla (Tema 5): `trap 'echo "Error a la còpia" | mail -s "BACKUP FALLIT $(hostname)" admin@educem.cat' ERR`.
 - Xifrar el fitxer amb GPG abans de pujar-lo (`gpg --symmetric --cipher-algo AES256 fitxer.tar.gz`), perquè el servidor de còpies no pugui llegir-ne el contingut.
 
 ### Pràctica 3: Desplegament d'un Lloc Web per SFTP (SFTP + HTTP)
 
-Al Tema 3 vam crear el lloc `exemple1.cat` amb el contingut a `/var/www/exemple1.cat/html`. Ara crearem un usuari **`webdev`** que només pugui actualitzar aquest lloc web per SFTP.
+Al Tema 3 vam crear el lloc `web1.educem.cat` amb el contingut a `/var/www/web1.educem.cat/html`. Ara crearem un usuari **`webdev`** que només pugui actualitzar aquest lloc web per SFTP.
 
 ```
 /var/                        root:root          755
 └── www/                     root:root          755
-    └── exemple1.cat/        root:root          755   ← arrel de la gàbia de webdev
+    └── web1.educem.cat/        root:root          755   ← arrel de la gàbia de webdev
         └── html/            webdev:www-data   2755   ← DocumentRoot d'Apache/Nginx
 ```
 
@@ -337,17 +337,17 @@ Al Tema 3 vam crear el lloc `exemple1.cat` amb el contingut a `/var/www/exemple1
 
 ```bash
 # Usuari només SFTP amb la gàbia a la carpeta del lloc web
-sudo useradd -M -d /var/www/exemple1.cat -s /usr/sbin/nologin webdev
+sudo useradd -M -d /var/www/web1.educem.cat -s /usr/sbin/nologin webdev
 sudo passwd webdev
 
 # La gàbia i les carpetes superiors han de ser de root
-sudo chown root:root /var/www /var/www/exemple1.cat
-sudo chmod 755 /var/www /var/www/exemple1.cat
+sudo chown root:root /var/www /var/www/web1.educem.cat
+sudo chmod 755 /var/www /var/www/web1.educem.cat
 
 # El contingut web és de webdev i del grup www-data (el servidor web el pot llegir)
-sudo chown -R webdev:www-data /var/www/exemple1.cat/html
-sudo find /var/www/exemple1.cat/html -type d -exec chmod 2755 {} \;
-sudo find /var/www/exemple1.cat/html -type f -exec chmod 644 {} \;
+sudo chown -R webdev:www-data /var/www/web1.educem.cat/html
+sudo find /var/www/web1.educem.cat/html -type d -exec chmod 2755 {} \;
+sudo find /var/www/web1.educem.cat/html -type f -exec chmod 644 {} \;
 ```
 
 El bit **setgid** (`2755`) fa que els fitxers nous que pugi `webdev` pertanyin al grup `www-data`.
@@ -358,10 +358,10 @@ Afegiu al final de `/etc/ssh/sshd_config.d/10-sftp.conf`:
 
 ```
 # =====================================================
-# Desenvolupador web: només pot actualitzar exemple1.cat
+# Desenvolupador web: només pot actualitzar web1.educem.cat
 # =====================================================
 Match User webdev
-    ChrootDirectory /var/www/exemple1.cat
+    ChrootDirectory /var/www/web1.educem.cat
     ForceCommand internal-sftp -u 0022 -l INFO
     AllowTcpForwarding no
     AllowAgentForwarding no
@@ -370,7 +370,7 @@ Match User webdev
 ```
 
 - `-u 0022`: màscara dels fitxers pujats (fitxers `644`, carpetes `755`) perquè el servidor web els pugui llegir.
-- Per registrar les operacions d'aquest usuari cal el socket de logs dins de la seva gàbia (`/var/www/exemple1.cat/dev/log`), com hem fet al punt 11.
+- Per registrar les operacions d'aquest usuari cal el socket de logs dins de la seva gàbia (`/var/www/web1.educem.cat/dev/log`), com hem fet al punt 11.
 
 ```bash
 sudo sshd -t && sudo systemctl restart ssh
@@ -384,7 +384,7 @@ mkdir -p ~/web
 cat > ~/web/index.html <<EOF
 <!DOCTYPE html>
 <html lang="ca">
-<head><meta charset="utf-8"><title>exemple1.cat</title></head>
+<head><meta charset="utf-8"><title>web1.educem.cat</title></head>
 <body><h1>Web desplegada per SFTP</h1><p>Versió: $(date '+%F %T')</p></body>
 </html>
 EOF
@@ -399,16 +399,13 @@ lftp -u webdev sftp://192.168.1.2 -e "mirror -R --delete --verbose $HOME/web /ht
 ```
 
 - `mirror -R`: puja (*reverse mirror*) la carpeta local al servidor.
-- `--delete`: esborra del servidor els fitxers que ja no existeixen en local. **Compte:** deixarà el DocumentRoot exactament igual que la carpeta local (s'esborraran els fitxers que hi havia, com el contingut de proves del Tema 3).
+- `--delete`: esborra del servidor els fitxers que ja no existeixen en local. **Compte:** deixarà el DocumentRoot exactament igual que la carpeta local. S'esborraran els fitxers que hi havia, com el contingut de proves del Tema 3 i les carpetes `admin` i `adminpanel`. Si les voleu conservar, copieu-les primer a `~/web`.
 
 #### Pas 4: Comprovar la web publicada
 
 ```bash
-# Pel nom (cal que el DNS del Tema 1 o /etc/hosts resolgui exemple1.cat)
-curl http://exemple1.cat
-
-# O indicant la capçalera Host directament a la IP
-curl -H "Host: exemple1.cat" http://192.168.1.2/
+# El lloc redirigeix l'HTTP a HTTPS (Tema 3, apartat 11); -k accepta el certificat autosignat
+curl -k https://web1.educem.cat
 ```
 
 Cada vegada que modifiqueu `~/web` i torneu a executar `lftp mirror`, la web es publicarà amb els canvis. És la base de molts processos de desplegament automàtic.
@@ -451,7 +448,7 @@ sudo journalctl -n 20 --no-pager | grep -i sshd
 
 **`webdev` rep `Permission denied` en pujar fitxers:**
 
-- Ha d'escriure dins de `/html`, no a l'arrel de la gàbia. Comproveu `ls -ld /var/www/exemple1.cat/html`.
+- Ha d'escriure dins de `/html`, no a l'arrel de la gàbia. Comproveu `ls -ld /var/www/web1.educem.cat/html`.
 
 ### Punt de Control
 
@@ -459,4 +456,4 @@ sudo journalctl -n 20 --no-pager | grep -i sshd
 - [ ] L'script `backup_sftp.sh` puja la còpia i la suma de verificació, i `sha256sum -c` retorna `OK`.
 - [ ] `cron` executa la còpia automàticament i el log mostra les execucions.
 - [ ] Heu restaurat una còpia i heu comprovat que és idèntica a l'original.
-- [ ] `webdev` pot actualitzar `exemple1.cat` amb `lftp mirror` i el canvi es veu amb `curl`.
+- [ ] `webdev` pot actualitzar `web1.educem.cat` amb `lftp mirror` i el canvi es veu amb `curl`.

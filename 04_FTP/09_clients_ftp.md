@@ -150,7 +150,7 @@ sudo apt install filezilla
 
 ```
 Protocol:          FTP - Protocol de transferència de fitxers
-Servidor:          ftp.domini.cat         Port: 21
+Servidor:          ftp.educem.cat         Port: 21
 Xifratge:          Usa només FTP pla (insegur)     ← ho canviarem al punt 10
 Tipus d'accés:     Normal
 Usuari:            usuari1
@@ -241,7 +241,7 @@ sudo apache2ctl configtest
 sudo systemctl reload apache2
 ```
 
-**Amb Nginx** (dins del bloc `server {}` del lloc per defecte):
+**Amb Nginx** (dins del bloc `server {}` del lloc per defecte, que al laboratori escolta al port 8080):
 
 ```nginx
 location /pub/ {
@@ -257,7 +257,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Ara, des del navegador del client, `http://192.168.1.2/pub/` mostra el llistat de fitxers i permet descarregar-los. És el mateix contingut que es publica per FTP anònim, accessible des de qualsevol navegador i, si s'activa HTTPS, **xifrat**.
+Ara, des del navegador del client, el llistat de fitxers es pot veure i descarregar a `http://192.168.1.2/pub/` (Apache) o a `http://192.168.1.2:8080/pub/` (Nginx). És el mateix contingut que es publica per FTP anònim, accessible des de qualsevol navegador i, si s'activa HTTPS, **xifrat**.
 
 ```
                 ┌──────────────── /srv/ftp/pub ─────────────────┐

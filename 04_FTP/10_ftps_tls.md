@@ -48,15 +48,15 @@ Amb FTPS, la connexió de control va xifrada. Els tallafocs i routers **no poden
 
 ### Pas 1: Crear el Certificat
 
-Com al Tema 3, per a un entorn de proves farem servir un certificat **autosignat**. En un servidor públic es pot utilitzar el mateix certificat de Let's Encrypt del servidor web si el nom (`ftp.domini.cat`) hi està inclòs.
+Com al Tema 3, per a un entorn de proves farem servir un certificat **autosignat**. En un servidor públic es pot utilitzar el mateix certificat de Let's Encrypt del servidor web si el nom (`ftp.educem.cat`) hi està inclòs.
 
 ```bash
 # Generar la clau privada i el certificat autosignat (vàlid 365 dies)
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /etc/ssl/private/vsftpd.key \
   -out /etc/ssl/certs/vsftpd.crt \
-  -subj "/C=ES/ST=Catalunya/L=Barcelona/O=Domini/CN=ftp.domini.cat" \
-  -addext "subjectAltName=DNS:ftp.domini.cat,IP:192.168.1.2"
+  -subj "/C=ES/ST=Catalunya/L=Barcelona/O=EDUCEM/CN=ftp.educem.cat" \
+  -addext "subjectAltName=DNS:ftp.educem.cat,IP:192.168.1.2"
 
 # Protegir la clau privada (només root)
 sudo chmod 600 /etc/ssl/private/vsftpd.key
@@ -65,7 +65,7 @@ sudo chmod 600 /etc/ssl/private/vsftpd.key
 openssl x509 -in /etc/ssl/certs/vsftpd.crt -noout -subject -dates -ext subjectAltName
 ```
 
-- `-subj`: evita les preguntes interactives. Canvieu `ftp.domini.cat` pel vostre nom.
+- `-subj`: evita les preguntes interactives. Canvieu `ftp.educem.cat` pel vostre nom.
 - `-addext "subjectAltName=..."`: els clients moderns comproven el nom del servidor a l'extensió **SAN**, no al `CN`.
 
 ### Pas 2: Configurar vsftpd
@@ -117,7 +117,7 @@ sudo systemctl status vsftpd --no-pager
 
 ```
 $ ftp 192.168.1.2
-220 Benvinguts al servidor FTP de domini.cat
+220 Benvinguts al servidor FTP d'educem.cat
 Name (192.168.1.2:alumne): usuari1
 530 Non-anonymous sessions must use encryption.
 Login failed.
@@ -134,7 +134,7 @@ openssl s_client -connect 192.168.1.2:21 -starttls ftp
 A la sortida comproveu:
 
 ```
-subject=C=ES, ST=Catalunya, L=Barcelona, O=Domini, CN=ftp.domini.cat
+subject=C=ES, ST=Catalunya, L=Barcelona, O=EDUCEM, CN=ftp.educem.cat
 ...
 New, TLSv1.3, Cipher is TLS_AES_256_GCM_SHA384
 ...
@@ -158,7 +158,7 @@ Per no haver de desactivar la verificació, es pot confiar en el certificat del 
 # Al client: copiar el certificat del servidor (amb el vostre usuari administrador)
 scp admin@192.168.1.2:/etc/ssl/certs/vsftpd.crt ~/vsftpd.crt
 # Connectar pel nom DNS (ha de coincidir amb el subjectAltName del certificat)
-lftp -u usuari1 -e "set ssl:ca-file $HOME/vsftpd.crt; set ftp:ssl-force true; ls; bye" ftp.domini.cat
+lftp -u usuari1 -e "set ssl:ca-file $HOME/vsftpd.crt; set ftp:ssl-force true; ls; bye" ftp.educem.cat
 ```
 
 **curl:**

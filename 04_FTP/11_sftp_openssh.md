@@ -208,7 +208,7 @@ Match Group sftpusers
 sudo sshd -t
 
 # Veure la configuració efectiva que s'aplicarà a client1
-sudo sshd -T -C user=client1,host=client,addr=192.168.1.100 | grep -Ei 'chroot|forcecommand|forwarding'
+sudo sshd -T -C user=client1,host=client,addr=192.168.1.50 | grep -Ei 'chroot|forcecommand|forwarding'
 
 # Reiniciar el servei SSH
 sudo systemctl restart ssh
@@ -362,12 +362,12 @@ sudo tail -f /var/log/auth.log | grep -Ei 'sshd|sftp'
 **Exemple de sortida** (el format exacte pot variar segons la versió i la distribució):
 
 ```
-sshd[3120]: Accepted password for client1 from 192.168.1.100 port 51544 ssh2
-internal-sftp[3125]: session opened for local user client1 from [192.168.1.100]
+sshd[3120]: Accepted password for client1 from 192.168.1.50 port 51544 ssh2
+internal-sftp[3125]: session opened for local user client1 from [192.168.1.50]
 internal-sftp[3125]: opendir "/pujades"
 internal-sftp[3125]: open "/pujades/informe.pdf" flags WRITE,CREATE,TRUNCATE mode 0644
 internal-sftp[3125]: close "/pujades/informe.pdf" bytes read 0 written 48213
-internal-sftp[3125]: session closed for local user client1 from [192.168.1.100]
+internal-sftp[3125]: session closed for local user client1 from [192.168.1.50]
 ```
 
 Si només veieu les línies de `sshd` i cap d'`internal-sftp`, el socket no està muntat dins de la gàbia: comproveu-ho amb `findmnt | grep dev/log`.
