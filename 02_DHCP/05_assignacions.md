@@ -19,8 +19,8 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
     # Pool d'IPs per clients dinàmics
     range 192.168.1.120 192.168.1.200;
 
-    option routers 192.168.1.2; #En el nostre cas server 0375 (enp0s8)
-    option domain-name-servers 192.168.1.2; #En el nostre cas server 0375 (enp0s8)
+    option routers 192.168.1.1; #En el nostre cas server 0374 (gateway amb NAT)
+    option domain-name-servers 192.168.1.2, 192.168.1.1; #DNS primari (0375) i secundari (0374)
 }
 ```
 
@@ -59,17 +59,18 @@ host mailserver {
 host printer01 {
     hardware ethernet 00:aa:bb:cc:dd:ee;
     fixed-address 192.168.1.40;
-    option routers 192.168.1.1; #Si disposa d'una altra gateway
+    # Opcions específiques per aquest host
+    option host-name "impressora01";
 }
 
-# PC de l'administrador
-host admin-pc {
-    hardware ethernet 00:11:22:33:44:55;
+# Client Ubuntu del laboratori
+host client {
+    hardware ethernet 08:00:27:aa:bb:cc;   # MAC de l'enp0s3 del client
     fixed-address 192.168.1.50;
-    # Opcions específiques per aquest host
-    option domain-name-servers 192.168.1.2, 1.1.1.1;
 }
 ```
+
+`Nota:` Al laboratori, els servidors 0375 i 0374 tenen la IP fixa al netplan, no per DHCP. El gateway i els servidors DHCP no poden dependre del DHCP: si el servidor DHCP no hi fos, es quedarien sense IP.
 
 **Paràmetres:**
 
@@ -84,17 +85,20 @@ host admin-pc {
 ├── .1        → Gateway (router)
 ├── .2-.20    → Servidors crítics (IP estàtica manual)
 ├── .21-.99   → Reserves DHCP (host declarations)
-└── .100-.200 → Pool dinàmic (range)
+└── .120-.200 → Pool dinàmic (range)
 ```
 
-### Obtenir MAC d'un dispositiu des del servidor
+### Obtenir MAC d'un dispositiu
 
 ```bash
-# Veure concessions actives
+# Al servidor: veure concessions actives
 sudo cat /var/lib/dhcp/dhcpd.leases | grep hardware
 
-# O amb arp (si el client està a la xarxa local)
-arp -a
+# Al servidor: equips de la xarxa local amb qui s'ha comunicat recentment
+ip neigh show dev enp0s8
+
+# Al client: MAC de la seva interfície (línia link/ether)
+ip link show enp0s3
 ```
 
 ### Assignacions per Classe (Class-based)
@@ -109,33 +113,31 @@ Es poden crear "classes" perquè el servidor pugui separar clients segons:
 - Una Substring de la MAC
 - Opcions de DHCP específiques
 
-**Exemple: separar Windows i Linux**
+**Exemple: separar els clients Windows de la resta**
 
 ```
-# Definir classes segons els 4 o 5 primers digits del "vendor" (MSFT o Linux)
+# Definir una classe segons els 4 primers caràcters del "vendor" (els Windows envien "MSFT")
 class "windows-clients" {
     match if substring (option vendor-class-identifier, 0, 4) = "MSFT";
 }
 
-class "linux-clients" {
-    match if substring (option vendor-class-identifier, 0, 5) = "Linux";
-}
-
 subnet 192.168.1.0 netmask 255.255.255.0 {
-    option routers 192.168.1.2; # El nostre servidor 0375
+    option routers 192.168.1.1; # El servidor 0374 (gateway)
 
     # Pool per sistemes Windows
     pool {
         allow members of "windows-clients";
-        range 192.168.1.100 192.168.1.150;
-        option domain-name-servers 192.168.1.2; # Limitem Windows a només DNS local
+        range 192.168.1.120 192.168.1.160;
+        option domain-name-servers 192.168.1.2; # Windows: només el DNS primari
     }
 
-    # Pool per sistemes Linux
+    # Pool per a la resta d'equips (Linux, mòbils...)
     pool {
-        allow members of "linux-clients";
-        range 192.168.1.151 192.168.1.200;
-        option domain-name-servers 192.168.1.2, 8.8.8.8; # El nostre servidor DNS 0375 + Google
+        deny members of "windows-clients";
+        range 192.168.1.161 192.168.1.200;
+        option domain-name-servers 192.168.1.2, 192.168.1.1; # DNS primari i secundari
     }
 }
 ```
+
+`Nota:` Els clients Linux habituals (NetworkManager, systemd-networkd) normalment no envien l'opció `vendor-class-identifier`. Per això el segon pool no fa servir `allow members of` una classe "Linux", sinó que accepta tots els equips que no són Windows. Si el pool només admetés membres d'una classe que no coincideix amb cap client, aquests clients no rebrien cap IP.

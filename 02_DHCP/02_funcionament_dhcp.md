@@ -17,7 +17,7 @@ CLIENT                                      SERVIDOR DHCP
   │ 2. DHCPOFFER (unicast o broadcast)           │
   │<─────────────────────────────────────────────│
   │   "T'ofereixo la IP 192.168.1.100"           │
-  │   + màscara, gateway, DNS, leas time, etc.   │
+  │   + màscara, gateway, DNS, lease time, etc.  │
   │                                              │
   │ 3. DHCPREQUEST (broadcast)                   │
   │─────────────────────────────────────────────>│
@@ -62,7 +62,7 @@ Les adreces IP assignades pel DHCP disposen d'un temps de concessió limitat. Qu
 Exemple d'un lease time (temps de concessió) de 24 hores.
 
 ```
-0h                  12h                  18h                 24h
+0h                  12h                  21h                 24h
 ├────────────────────┼────────────────────┼────────────────────┤
 │    IP Assignada    │  Fase T1 (50%)     │ Fase T2 (87.5%)    │ Expiració
 │                    │  Renovació unicast │ Broadcast general  │
@@ -85,7 +85,7 @@ Exemple d'un lease time (temps de concessió) de 24 hores.
 **El client Allibera la IP (DHCPRELEASE):**
 
 - El client allibera la IP abans de que expiri el lease time
-- Es produeix quan s'apaga un equip, es desconnecta una interfície (Ethernet o Wi-Fi) o es realtizar un "dhclient -r".
+- Es pot produir quan s'apaga un equip, quan es desconnecta una interfície (Ethernet o Wi-Fi) o quan l'administrador allibera la IP manualment.
 
 **El client Rebutja la IP (DHCPDECLINE):**
 
@@ -122,7 +122,12 @@ sudo tcpdump -i any port 67 or port 68 -vvv
 ```
 
 ```bash
-#Terminal 2
-sudo dhclient -r
-sudo dhclient
+#Terminal 2 - Client d'escriptori (NetworkManager)
+sudo nmcli device disconnect enp0s3
+sudo nmcli device connect enp0s3
+
+#Terminal 2 - Ubuntu Server (systemd-networkd): renovació de la concessió
+sudo networkctl renew enp0s3
 ```
+
+`Nota:` Si el client recorda la IP que tenia, la demana directament (DHCPREQUEST i DHCPACK, sense DISCOVER ni OFFER). Una renovació també només fa servir aquests dos missatges. L'ordre clàssica `dhclient` (client d'ISC) no s'instal·la per defecte a Ubuntu 24.04.

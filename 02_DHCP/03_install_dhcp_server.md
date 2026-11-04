@@ -4,7 +4,7 @@ A continuació es mostra com instal·lar i preparar un servidor DHCP per la vost
 
 ### ISC DHCP Server (Debian/Ubuntu)
 
-L'ISC DHCP Server és el servidor DHCP més utilitzat (o més comú) en sistemes basats en Debian. En un futur proper es comenta que Kea DHCP serà el successor natural de ISC-DHCP-SERVER.
+L'ISC DHCP Server ha estat el servidor DHCP més utilitzat en sistemes basats en Debian. L'ISC en va acabar el manteniment l'any 2022 i el seu successor és **Kea DHCP**. Tot i això, continua disponible a Debian i Ubuntu i és el que farem servir.
 
 ```bash
 # Actualitzar repositoris
@@ -23,7 +23,7 @@ dhcpd --version
 /etc/dhcp/
 ├── dhcpd.conf           # Configuració principal del servei DHCPv4
 ├── dhcpd6.conf          # Configuració DHCPv6
-└── dhclient.conf        # Configuració del client (opcions del client)
+└── dhclient.conf        # Configuració del client ISC (només si està instal·lat)
 
 /var/lib/dhcp/
 └── dhcpd.leases         # Base de dades de concessions (IPs ja assignades)
@@ -33,8 +33,6 @@ dhcpd --version
 ```
 
 ### Configurar una Interfície d'Escolta
-
-Abans d'iniciar el servei, cal especificar en quina interfície escoltarà.
 
 Abans d'iniciar el servei, cal especificar en quina interfície de xarxa rebrà peticions el servidor DHCP. Això garanteix que el servei no pugui fer servir altres interfícies o targetes de xarxa com la WAN o d'altres xarxes que no volem que disposin de servei DHCP.
 
@@ -63,6 +61,8 @@ sudo systemctl status isc-dhcp-server
 # Habilitar l'encesa automàtica del servei durant l'arrencada del servidor
 sudo systemctl enable isc-dhcp-server
 
-# Verificar el port d'escola
+# Verificar el port d'escolta
 sudo ss -plutn | grep dhcpd
 ```
+
+`Nota:` Fins que no configurem una subxarxa per a l'enp0s8 (apartat 04), el servei no arrencarà. És normal: al log hi apareix `No subnet declaration for enp0s8`.

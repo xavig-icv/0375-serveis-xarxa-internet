@@ -1,5 +1,7 @@
 # 02 CONFIGURACIO AUTOMATICA - Administració de Serveis DHCP
 
+> Escenari del laboratori (IPs, domini `educem.cat`, DHCP de referència): [00_RECURSOS/01_escenari_laboratori.md](../00_RECURSOS/01_escenari_laboratori.md)
+
 ## Índex de continguts
 
 1. [Introducció als Serveis de Configuració Automàtica](./01_intro_dhcp.md)

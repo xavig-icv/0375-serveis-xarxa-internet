@@ -57,22 +57,22 @@ dispositiu → sol·licita configuració → servidor DHCP respon amb els paràm
 SERVIDOR DHCP (192.168.1.2) - Ubuntu Server 0375
     │
     ├── PC-01 (Client DHCP)
-    │     → IP: 192.168.1.100
+    │     → IP: 192.168.1.120
     │     → Mask: 255.255.255.0
     │     → Gateway: 192.168.1.1 (Ubuntu Server 0374)
-    │     → DNS: 192.168.1.2 (Ubuntu Server 0375)
+    │     → DNS: 192.168.1.2 i 192.168.1.1 (Ubuntu Server 0375 i 0374)
     │
     ├── PC-02 (Client DHCP)
-    │     → IP: 192.168.1.101
+    │     → IP: 192.168.1.121
     │     → Mask: 255.255.255.0
     │     → Gateway: 192.168.1.1 (Ubuntu Server 0374)
-    │     → DNS: 192.168.1.2 (Ubuntu Server 0375)
+    │     → DNS: 192.168.1.2 i 192.168.1.1 (Ubuntu Server 0375 i 0374)
     │
     └── PC-03 (Client DHCP)
-          → IP: 192.168.1.102
+          → IP: 192.168.1.122
           → Mask: 255.255.255.0
           → Gateway: 192.168.1.1 (Ubuntu Server 0374)
-          → DNS: 192.168.1.2 (Ubuntu Server 0375)
+          → DNS: 192.168.1.2 i 192.168.1.1 (Ubuntu Server 0375 i 0374)
 ```
 
 **Exemples d'us del Servei de DHCP**

@@ -36,7 +36,7 @@ sudo nano /etc/dhcp/dhcpd.conf
 
 ```bash
 # /etc/dhcp/dhcpd.conf
-# Configuració bàsica del servidor DHCP
+# Configuració bàsica del servidor DHCP (servidor 0375)
 
 ###################################################
 # PARÀMETRES GLOBALS
@@ -50,8 +50,8 @@ default-lease-time 86400;      # 24 hores
 max-lease-time 172800;         # 48 hores
 
 # Opcions globals (si no s'especifiquen a la subnet)
-option domain-name "domini.cat";
-option domain-name-servers 1.1.1.1, 1.0.0.1;
+option domain-name "educem.cat";
+option domain-name-servers 192.168.1.2, 192.168.1.1;
 
 # Logging (local7 és una "categoria" per identificar els logs al syslog)
 # Permet separar els logs de DHCP dels altres (podem indicar un fitxer /var/log/dhcpd.log)
@@ -65,23 +65,29 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
     # Rang d'IPs disponibles per assignar (pool)
     range 192.168.1.120 192.168.1.200;
 
-    # Gateway per defecte (router) - Per nosaltres el propi servidor 0375
-    option routers 192.168.1.2;
+    # Gateway per defecte (router) - Per nosaltres el servidor 0374 (fa NAT cap a Internet)
+    option routers 192.168.1.1;
 
-    # Servidors DNS (sobreescriu global) - Per nosaltres el propi servidor 0375
-    option domain-name-servers 192.168.1.2, 1.1.1.1;
+    # Servidors DNS (sobreescriu global) - DNS primari (0375) i secundari (0374)
+    option domain-name-servers 192.168.1.2, 192.168.1.1;
 
-    # Domini de cerca (ping www = ping www.domini.cat)
-    option domain-name "domini.cat";
+    # Domini de cerca (ping www = ping www.educem.cat)
+    option domain-name "educem.cat";
 
     # Broadcast (disposem d'una màscara /24)
     option broadcast-address 192.168.1.255;
 
     # Temps de concessió específic per aquesta subnet
-    default-lease-time 43200;     # 10 hores (jornada laboral + descansos)
+    default-lease-time 43200;     # 12 hores (jornada laboral + descansos)
     max-lease-time 86400;         # 24 hores
 }
 ```
+
+**Servidors DNS: només els del laboratori**
+
+- El DHCP del laboratori ha de repartir només els DNS interns (`192.168.1.2` i `192.168.1.1`). No hi afegiu DNS públics com `1.1.1.1` o `8.8.8.8`.
+- El domini `educem.cat` només existeix als nostres servidors. systemd-resolved fa servir un sol DNS cada vegada: si el client passés a fer servir un DNS públic, deixaria de resoldre els noms del laboratori.
+- Els noms d'Internet ja els resol el nostre BIND a través dels forwarders (Tema 1).
 
 ### Paràmetres Globals Importants
 
@@ -127,6 +133,27 @@ sudo systemctl restart isc-dhcp-server    # Debian/Ubuntu
 # 3. Verificar l'estat
 sudo systemctl status isc-dhcp-server
 ```
+
+### Comprovar-ho al Client
+
+Al Tema 1 el client tenia IP fixa. Ara ha de demanar la configuració per DHCP: al netplan del client, substituïu les adreces, la ruta i els DNS per `dhcp4: true` i apliqueu-ho amb `sudo netplan apply`.
+
+```bash
+# Al client d'escriptori (NetworkManager): tornar a demanar la configuració
+sudo nmcli device disconnect enp0s3
+sudo nmcli device connect enp0s3
+
+# IP rebuda
+ip -4 addr show enp0s3
+
+# Opcions rebudes del servidor: gateway, DNS, domini, temps de concessió...
+nmcli -f DHCP4 device show enp0s3
+
+# DNS que farà servir el client
+resolvectl dns
+```
+
+`Nota:` L'ordre clàssica `dhclient` (client DHCP d'ISC) no s'instal·la per defecte a Ubuntu 24.04. Als equips amb systemd-networkd (Ubuntu Server), la concessió es renova amb `sudo networkctl renew <interfície>`.
 
 ### Base de Dades de Concessions
 
