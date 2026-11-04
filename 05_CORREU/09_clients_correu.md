@@ -2,19 +2,19 @@
 
 ### Introducció
 
-Els clients de correu (MUA - Mail User Agent) són les aplicacions que utilitzen els usuaris per llegir i enviar correus. En aquest tema configurarem **Thunderbird** i l'eina de línia de comandes.
+Els clients de correu (MUA - Mail User Agent) són les aplicacions que utilitzen els usuaris per llegir i enviar correus. En aquest tema configurarem **Thunderbird** al client Ubuntu i l'eina de línia de comandes `mail` al servidor.
 
 ### Thunderbird (Client Gràfic)
 
 **Thunderbird** és un client de correu gratuït i de codi obert desenvolupat per Mozilla.
 
-**Instal·lació a Ubuntu:**
+**Instal·lació a Ubuntu (al client):**
 
 ```bash
 # Actualitzar repositoris
 sudo apt update
 
-# Instal·lar Thunderbird
+# Instal·lar Thunderbird (a Ubuntu s'instal·la com a paquet snap)
 sudo apt install thunderbird
 
 # Executar
@@ -29,52 +29,48 @@ thunderbird &
 2. Menú → **File** → **New** → **Existing Mail Account**
 3. Introduir dades:
    - **Your name:** Nom de l'usuari
-   - **Email address:** usuari@domini.cat
-   - **Password:** contrasenya
+   - **Email address:** usuari1@educem.cat
+   - **Password:** contrasenya de l'usuari al servidor
 
 **Pas 2: Configuració Manual**
 
-Si la configuració automàtica no funciona, clicar **"Manual config"**:
+Clicar **"Configure manually"**. La configuració automàtica busca el servidor a Internet i amb el nostre domini de laboratori no el trobaria.
 
-**Servidor Entrant (IMAP o POP3):**
+**Servidor Entrant (IMAP):**
 
-| Camp               | Valor IMAP        | Valor POP3        |
-| ------------------ | ----------------- | ----------------- |
-| **Protocol**       | IMAP              | POP3              |
-| **Hostname**       | mail.domini.cat   | mail.domini.cat   |
-| **Port**           | 143               | 110               |
-| **SSL**            | STARTTLS          | STARTTLS          |
-| **Authentication** | Normal password   | Normal password   |
-| **Username**       | usuari@domini.cat | usuari@domini.cat |
+| Camp               | Valor                                  |
+| ------------------ | -------------------------------------- |
+| **Protocol**       | IMAP                                   |
+| **Hostname**       | mail.educem.cat                        |
+| **Port**           | 993                                    |
+| **SSL**            | SSL/TLS                                |
+| **Authentication** | Normal password                        |
+| **Username**       | usuari1                                |
 
 **Servidor Sortint (SMTP):**
 
-| Camp               | Valor             |
-| ------------------ | ----------------- |
-| **Hostname**       | mail.domini.cat   |
-| **Port**           | 587               |
-| **SSL**            | STARTTLS          |
-| **Authentication** | Normal password   |
-| **Username**       | usuari@domini.cat |
+| Camp               | Valor           |
+| ------------------ | --------------- |
+| **Hostname**       | mail.educem.cat |
+| **Port**           | 587             |
+| **SSL**            | STARTTLS        |
+| **Authentication** | Normal password |
+| **Username**       | usuari1         |
 
-**Pas 3: Configuració Avançada (Ports SSL/TLS)**
+**Nom d'usuari:** els usuaris de correu són usuaris del sistema, i el seu nom és `usuari1` (sense el domini).
 
-Si s'utilitzen ports amb SSL/TLS directe:
+- Thunderbird proposa per defecte l'adreça completa (`usuari1@educem.cat`). Si no s'ha configurat `auth_username_format = %Ln` a Dovecot (apartat 06), l'autenticació falla.
+- Amb aquesta directiva, funcionen totes dues formes.
 
-**IMAP amb SSL/TLS:**
+**Pas 3: Altres Ports**
 
-- Port: **993**
-- Connection security: **SSL/TLS**
+Altres combinacions possibles:
 
-**POP3 amb SSL/TLS:**
+- **IMAP amb STARTTLS:** port 143, Connection security **STARTTLS**.
+- **POP3 amb SSL/TLS:** port 995, Connection security **SSL/TLS**.
+- **SMTP amb TLS implícit:** port 465, Connection security **SSL/TLS**. Cal activar el servei `submissions` a `master.cf`. L'RFC 8314 el recomana per als clients.
 
-- Port: **995**
-- Connection security: **SSL/TLS**
-
-**SMTP amb SSL/TLS:**
-
-- Port: **465**
-- Connection security: **SSL/TLS**
+No configureu IMAP o POP3 sense xifrat (143/110 amb "None"). Dovecot no permet enviar la contrasenya sense xifrar des d'un altre equip (`disable_plaintext_auth = yes`).
 
 ### Configuració amb Certificats Autosignats
 
@@ -87,11 +83,15 @@ Si utilitzes certificats autosignats, Thunderbird mostrarà una advertència.
 3. Clicar **"View"** per veure el certificat
 4. Clicar **"Confirm Security Exception"**
 
+L'excepció es guarda per a cada servidor i port. El primer cop que envieu un correu (servidor SMTP, port 587), Thunderbird també pot demanar que accepteu el certificat. Les excepcions es poden revisar a **Settings → Privacy & Security → Manage Certificates → Servers**.
+
 **Important:** Només fer això en entorns de proves o amb certificats autosignats de confiança.
 
 ### Eines de Terminal
 
-**Instal·lació:**
+L'ordre `mail` (paquet `mailutils`) es fa servir **al servidor**, on hi ha els usuaris i les bústies. No l'instal·leu al client: el paquet hi instal·laria també un servidor de correu (Postfix).
+
+**Instal·lació (al servidor):**
 
 ```bash
 sudo apt install mailutils
@@ -101,20 +101,22 @@ sudo apt install mailutils
 
 ```bash
 # Enviar correu simple
-echo "Contingut del missatge" | mail -s "Assumpte" destinatari@example.com
+echo "Contingut del missatge" | mail -s "Assumpte" usuari2@educem.cat
 
 # Enviar amb fitxer com a contingut
-mail -s "Assumpte" destinatari@example.com < missatge.txt
+mail -s "Assumpte" usuari2@educem.cat < missatge.txt
 
 # Enviar amb fitxer adjunt
-echo "Missatge" | mail -s "Assumpte" -A document.pdf destinatari@example.com
+echo "Missatge" | mail -s "Assumpte" -A document.pdf usuari2@educem.cat
 ```
 
 **Llegir correu:**
 
+Les bústies són en format **Maildir** (`~/Maildir`), i `mail` sense arguments busca el correu a `/var/mail/usuari`. Cal indicar-li la bústia:
+
 ```bash
-# Llegir correus
-mail
+# Com a usuari2: llegir la bústia Maildir
+mail -f ~/Maildir
 
 # Comandes dins de mail:
 # h        - Llistar correus
@@ -129,61 +131,51 @@ sudo tail -f /var/log/mail.log
 
 ### Proves de Configuració
 
-**Test 1: Enviar correu amb mail**
+**Test 1: Enviar correu amb mail (al servidor)**
 
 ```bash
 # Enviar correu de prova
-echo "Test de configuració del client" | mail -s "Prova" usuari@domini.cat
+echo "Test de configuració del client" | mail -s "Prova" usuari1@educem.cat
 
 # Verificar als logs del servidor
 sudo tail -f /var/log/mail.log
 ```
 
-**Test 2: Connectar amb telnet (IMAP)**
+**Test 2: Connectar amb openssl (IMAPS) des del client**
 
 ```bash
-# Provar connexió IMAP
-telnet mail.domini.cat 143
+# Provar connexió IMAPS
+openssl s_client -connect mail.educem.cat:993 -crlf
 
-EHLO localhost
-a001 LOGIN usuari@domini.cat contrasenya
+a001 LOGIN usuari1 contrasenya
 a002 LIST "" "*"
 a003 SELECT INBOX
 a004 LOGOUT
 ```
 
-**Test 3: Connectar amb openssl (IMAPS)**
+Si proveu `telnet mail.educem.cat 143` des del client, el servidor anuncia `LOGINDISABLED`: no accepta contrasenyes sense xifrar des d'un altre equip. És el comportament correcte.
+
+**Test 3: Verificar enviament SMTP des del client**
 
 ```bash
-# Provar connexió IMAPS
-openssl s_client -connect mail.domini.cat:993 -crlf
+# Amb telnet només es pot arribar fins a STARTTLS
+telnet mail.educem.cat 587
 
-a001 LOGIN usuari@domini.cat contrasenya
-a002 LIST "" "*"
-a003 LOGOUT
-```
-
-**Test 4: Verificar enviament SMTP**
-
-```bash
-# Provar enviament amb telnet
-telnet mail.domini.cat 587
-
-EHLO localhost
+EHLO client.educem.cat
 STARTTLS
 # (després de STARTTLS cal utilitzar openssl)
 
 # O directament amb openssl:
-openssl s_client -connect mail.domini.cat:587 -starttls smtp -crlf
+openssl s_client -connect mail.educem.cat:587 -starttls smtp -crlf
 
-EHLO localhost
+EHLO client.educem.cat
 AUTH PLAIN [base64_credentials]
-MAIL FROM:<usuari@domini.cat>
-RCPT TO:<desti@example.com>
+MAIL FROM:<usuari1@educem.cat>
+RCPT TO:<usuari2@educem.cat>
 DATA
 Subject: Test
-From: usuari@domini.cat
-To: desti@example.com
+From: usuari1@educem.cat
+To: usuari2@educem.cat
 
 Missatge de prova.
 .
@@ -195,10 +187,11 @@ QUIT
 **Thunderbird no connecta:**
 
 1. Verificar configuració de ports i SSL
-2. Verificar que el servidor està actiu:
+2. Verificar que el client resol el servidor i que els ports responen:
    ```bash
-   telnet mail.domini.cat 143
-   telnet mail.domini.cat 587
+   dig +short mail.educem.cat
+   openssl s_client -connect mail.educem.cat:993 </dev/null
+   openssl s_client -connect mail.educem.cat:587 -starttls smtp </dev/null
    ```
 3. Verificar logs del servidor:
    ```bash
@@ -209,14 +202,14 @@ QUIT
 **Error: "Certificate not trusted":**
 
 - Si és un certificat autosignat, acceptar l'excepció
-- Si és Let's Encrypt, verificar que el certificat és vàlid
+- Si és un certificat d'una CA (per exemple Let's Encrypt), verificar que és vàlid i que el nom coincideix
 
 **Error: "Authentication failed":**
 
-1. Verificar usuari i contrasenya
+1. Verificar usuari i contrasenya (el nom d'usuari és el del sistema: `usuari1`)
 2. Provar autenticació des del servidor:
    ```bash
-   doveadm auth test usuari@domini.cat contrasenya
+   doveadm auth test usuari1 contrasenya
    ```
 3. Verificar logs:
    ```bash

@@ -24,14 +24,13 @@ CLIENT                                    SERVIDOR
   │                                          │
   │  Connexió TCP al port 25/587             │
   │<─────────────────────────────────────────│
-  │  220 mail.domini.cat ESMTP Postfix       │
+  │  220 mail.educem.cat ESMTP Postfix       │
   │                                          │
-  │  EHLO client.domini.cat                  │
+  │  EHLO client.educem.cat                  │
   │──────────────────────────────────────────>│
-  │  250-mail.domini.cat                     │
+  │  250-mail.educem.cat                     │
   │  250-SIZE 10240000                       │
-  │  250-STARTTLS                            │
-  │  250 AUTH PLAIN LOGIN                    │
+  │  250 STARTTLS                            │
   │<─────────────────────────────────────────│
   │                                          │
   │  STARTTLS                                │
@@ -42,12 +41,18 @@ CLIENT                                    SERVIDOR
   │  [Negociació TLS]                        │
   │<────────────────────────────────────────>│
   │                                          │
+  │  EHLO client.educem.cat (de nou)         │
+  │──────────────────────────────────────────>│
+  │  250-mail.educem.cat                     │
+  │  250 AUTH PLAIN LOGIN                    │
+  │<─────────────────────────────────────────│
+  │                                          │
   │  AUTH PLAIN [credentials]                │
   │──────────────────────────────────────────>│
   │  235 Authentication successful           │
   │<─────────────────────────────────────────│
   │                                          │
-  │  MAIL FROM:<usuari@domini.cat>           │
+  │  MAIL FROM:<usuari@educem.cat>           │
   │──────────────────────────────────────────>│
   │  250 Ok                                  │
   │<─────────────────────────────────────────│
@@ -62,7 +67,7 @@ CLIENT                                    SERVIDOR
   │  354 End data with <CR><LF>.<CR><LF>     │
   │<─────────────────────────────────────────│
   │                                          │
-  │  From: usuari@domini.cat                 │
+  │  From: usuari@educem.cat                 │
   │  To: desti@example.com                   │
   │  Subject: Prova                          │
   │                                          │
@@ -78,13 +83,15 @@ CLIENT                                    SERVIDOR
   │<─────────────────────────────────────────│
 ```
 
+Després de STARTTLS, el client ha de tornar a enviar `EHLO`: la sessió SMTP torna a començar dins del canal xifrat. Molts servidors (com el nostre, apartat 08) només anuncien `AUTH` després de STARTTLS, per no rebre mai contrasenyes sense xifrar.
+
 ### Comandes SMTP Principals
 
 | Comanda       | Descripció                            | Exemple                         |
 | ------------- | ------------------------------------- | ------------------------------- |
-| **HELO**      | Identificació del client (SMTP bàsic) | `HELO client.domini.cat`        |
-| **EHLO**      | Identificació del client (ESMTP)      | `EHLO client.domini.cat`        |
-| **MAIL FROM** | Especifica el remitent                | `MAIL FROM:<usuari@domini.cat>` |
+| **HELO**      | Identificació del client (SMTP bàsic) | `HELO client.educem.cat`        |
+| **EHLO**      | Identificació del client (ESMTP)      | `EHLO client.educem.cat`        |
+| **MAIL FROM** | Especifica el remitent                | `MAIL FROM:<usuari@educem.cat>` |
 | **RCPT TO**   | Especifica el destinatari             | `RCPT TO:<desti@example.com>`   |
 | **DATA**      | Inicia la transferència del missatge  | `DATA`                          |
 | **STARTTLS**  | Inicia xifrat TLS                     | `STARTTLS`                      |
@@ -141,7 +148,7 @@ CLIENT                                    SERVIDOR
 
 | Comanda  | Descripció                                 | Exemple                  |
 | -------- | ------------------------------------------ | ------------------------ |
-| **USER** | Nom d'usuari                               | `USER usuari@domini.cat` |
+| **USER** | Nom d'usuari                               | `USER usuari@educem.cat` |
 | **PASS** | Contrasenya                                | `PASS secret123`         |
 | **STAT** | Estat de la bústia                         | `STAT` → `+OK 3 1024`    |
 | **LIST** | Llista missatges                           | `LIST`                   |
@@ -160,7 +167,7 @@ CLIENT                          SERVIDOR
   │<───────────────────────────────│
   │  +OK POP3 server ready         │
   │                                │
-  │  USER usuari@domini.cat        │
+  │  USER usuari@educem.cat        │
   │────────────────────────────────>│
   │  +OK                           │
   │<───────────────────────────────│
@@ -239,7 +246,7 @@ CLIENT                                SERVIDOR
   │<─────────────────────────────────────│
   │  * OK IMAP4 server ready             │
   │                                      │
-  │  a001 LOGIN usuari@domini.cat pass   │
+  │  a001 LOGIN usuari@educem.cat pass   │
   │──────────────────────────────────────>│
   │  a001 OK Logged in                   │
   │<─────────────────────────────────────│
@@ -287,7 +294,7 @@ CLIENT                                SERVIDOR
 | -------- | ---- | ---------------------- | --------------------------------- |
 | SMTP     | 25   | No (opcional STARTTLS) | Transferència entre servidors     |
 | SMTP     | 587  | STARTTLS               | Enviament per clients (recomanat) |
-| SMTPS    | 465  | SSL/TLS                | Enviament xifrat (deprecated)     |
+| SMTPS    | 465  | SSL/TLS (implícit)     | Enviament per clients (RFC 8314)  |
 | POP3     | 110  | No                     | Descàrrega de correu              |
 | POP3S    | 995  | SSL/TLS                | Descàrrega xifrada                |
 | IMAP     | 143  | No (opcional STARTTLS) | Sincronització de correu          |
@@ -312,6 +319,6 @@ CLIENT                                SERVIDOR
 **Recomanacions de seguretat:**
 
 - Utilitzar **sempre STARTTLS o SSL/TLS**
-- Port **587** amb STARTTLS per enviar correus
+- Port **587** (STARTTLS) o **465** (TLS implícit, recomanat per l'RFC 8314) per enviar correus
 - Port **993** (IMAPS) o **995** (POP3S) per rebre
 - **Deshabilitar** protocols sense xifrat en producció

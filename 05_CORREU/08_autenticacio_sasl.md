@@ -1,4 +1,4 @@
-## 07. Autenticació SASL
+## 08. Autenticació SASL
 
 ### Què és SASL?
 
@@ -35,6 +35,8 @@ CLIENT                    POSTFIX                   DOVECOT
   │  5. MAIL FROM/RCPT TO    │                         │
   │─────────────────────────>│                         │
 ```
+
+Postfix no comprova les contrasenyes: les demana a Dovecot a través d'un socket. Així els usuaris fan servir la mateixa contrasenya per enviar (SMTP) i per llegir el correu (IMAP/POP3).
 
 ### Configuració de SASL amb Dovecot
 
@@ -78,18 +80,11 @@ smtpd_sasl_auth_enable = yes
 # Tipus de servidor SASL (Dovecot)
 smtpd_sasl_type = dovecot
 
-# Ruta al socket d'autenticació de Dovecot
+# Ruta al socket d'autenticació de Dovecot (relativa a /var/spool/postfix)
 smtpd_sasl_path = private/auth
 
-# Domini SASL (opcional)
-# smtpd_sasl_local_domain = $mydomain
-
-# Mecanismes d'autenticació permesos
-smtpd_sasl_security_options = noanonymous, noplaintext
-smtpd_sasl_tls_security_options = noanonymous
-
-# Trencar la compatibilitat amb clients antics (Microsoft)
-# broken_sasl_auth_clients = yes
+# Mecanismes permesos: de moment, també sense TLS (per a les proves amb telnet)
+smtpd_sasl_security_options = noanonymous
 
 # Permetre autenticació per usuaris autenticats
 smtpd_recipient_restrictions =
@@ -100,18 +95,12 @@ smtpd_recipient_restrictions =
 
 ### Configuració del Port Submission (587)
 
-El port 587 és el recomanat per a l'enviament de correu per part de clients autenticats.
-
-**Verificar la configuració a master.cf:**
+El port 587 és el recomanat per a l'enviament de correu per part de clients autenticats. El servei `submission` de `/etc/postfix/master.cf` ja el vam configurar a l'apartat 07. Les seves opcions `smtpd_sasl_auth_enable=yes` i `smtpd_client_restrictions=permit_sasl_authenticated,reject` funcionen a partir d'ara, quan Postfix ja pot consultar Dovecot.
 
 ```bash
-sudo nano /etc/postfix/master.cf
-```
-
-```bash
-submission inet n       -       y       -       -       smtpd
-...
-...
+# Veure la configuració activa del submission
+postconf -M submission/inet
+postconf -P | grep '^submission'
 ```
 
 ### Mecanismes d'Autenticació SASL
@@ -127,18 +116,17 @@ submission inet n       -       y       -       -       smtpd
 | **GSSAPI**     | Alta                  | Kerberos                            |
 | **EXTERNAL**   | Alta                  | Certificats client SSL/TLS          |
 
-**Configuració recomanada (Dovecot):**
+**Configuració recomanada (Dovecot, `/etc/dovecot/conf.d/10-auth.conf`):**
 
 ```bash
-# /etc/dovecot/conf.d/10-auth.conf
 auth_mechanisms = plain login
-disable_plaintext_auth = yes  # Només amb SSL/TLS
+# Només amb SSL/TLS
+disable_plaintext_auth = yes
 ```
 
-**Configuració recomanada (Postfix):**
+**Configuració recomanada (Postfix, `/etc/postfix/main.cf`):** la configurarem a la fase 2 de les proves.
 
 ```bash
-# /etc/postfix/main.cf
 smtpd_sasl_security_options = noanonymous, noplaintext
 smtpd_sasl_tls_security_options = noanonymous
 ```
@@ -152,24 +140,41 @@ sudo systemctl reload dovecot
 # Recarregar Postfix
 sudo systemctl reload postfix
 
-# Verificar que escolta al port 587
+# Verificar que existeix el socket i que escolta al port 587
+sudo ls -l /var/spool/postfix/private/auth
 sudo ss -plutn | grep :587
 ```
 
 ### Proves d'Autenticació SASL
 
+Les proves es fan en dues fases:
+
+1. **Fase 1 (temporal):** l'autenticació també es permet sense xifrat al port 25, per poder veure-la amb `telnet`.
+2. **Fase 2 (definitiva):** l'autenticació només es permet dins de TLS, i es prova amb `openssl`.
+
+Amb la configuració definitiva, Postfix **no anuncia AUTH fins que el client ha fet STARTTLS**. Per això les proves amb `telnet` s'han de fer abans, igual que fem temporalment amb `disable_plaintext_auth = no` a Dovecot.
+
+#### Fase 1: proves amb telnet (sense xifrat, temporal)
+
+```bash
+# Comprovar que l'autenticació sense TLS està permesa temporalment
+postconf smtpd_tls_auth_only smtpd_sasl_security_options
+# smtpd_tls_auth_only = no
+# smtpd_sasl_security_options = noanonymous
+```
+
 **Test 1: Verificar que SASL està actiu**
 
 ```bash
-# Connectar al port 587
-telnet localhost 587
+# Connectar al port 25 (al mateix servidor)
+telnet localhost 25
 
 # Comandes:
 EHLO localhost
 
-# Ha de mostrar:
-# 250-AUTH PLAIN LOGIN
+# Ha de mostrar, entre altres:
 # 250-STARTTLS
+# 250-AUTH PLAIN LOGIN
 ```
 
 **Test 2: Provar autenticació amb telnet**
@@ -177,10 +182,10 @@ EHLO localhost
 ```bash
 # Generar credencials en base64
 # Format: \0usuari\0contrasenya
-printf '\0usuari@domini.cat\0contrasenya' | base64
+printf '\0usuari1\0contrasenya' | base64
 
 # Connectar
-telnet localhost 587
+telnet localhost 25
 
 # Comandes:
 EHLO localhost
@@ -190,21 +195,37 @@ AUTH PLAIN [string_base64_generat]
 # 235 2.7.0 Authentication successful
 ```
 
+Si l'autenticació falla, consulteu `/var/log/mail.log` i comproveu la configuració temporal de Dovecot (`disable_plaintext_auth = no`, apartat 06).
+
+#### Fase 2: autenticació només amb TLS (configuració definitiva)
+
+```bash
+sudo postconf -e 'smtpd_tls_auth_only=yes'
+sudo postconf -e 'smtpd_sasl_security_options=noanonymous, noplaintext'
+sudo postconf -e 'smtpd_sasl_tls_security_options=noanonymous'
+sudo systemctl reload postfix
+```
+
+- `smtpd_tls_auth_only = yes`: AUTH només s'anuncia i s'accepta després de STARTTLS.
+- `noplaintext`: sense TLS, no es permeten els mecanismes que envien la contrasenya en clar (PLAIN, LOGIN).
+
+Ara, amb `telnet localhost 25`, l'`EHLO` ja no mostra `250-AUTH`. És el comportament correcte.
+
 **Test 3: Provar amb openssl (TLS)**
 
 ```bash
-# Connectar amb TLS
+# Connectar amb TLS al port submission
 openssl s_client -connect localhost:587 -starttls smtp -crlf
 
-# Comandes:
+# Comandes (després de STARTTLS cal tornar a fer EHLO):
 EHLO localhost
 AUTH PLAIN [base64_credentials]
-MAIL FROM:<usuari@domini.cat>
-RCPT TO:<desti@example.com>
+MAIL FROM:<usuari1@educem.cat>
+RCPT TO:<usuari2@educem.cat>
 DATA
 Subject: Test SASL
-From: usuari@domini.cat
-To: desti@example.com
+From: usuari1@educem.cat
+To: usuari2@educem.cat
 
 Prova d'autenticació SASL.
 .
@@ -215,11 +236,37 @@ QUIT
 
 Configuració al client:
 
-- **Servidor sortint (SMTP):** mail.domini.cat
+- **Servidor sortint (SMTP):** mail.educem.cat
 - **Port:** 587
 - **Seguretat de connexió:** STARTTLS
 - **Mètode d'autenticació:** Contrasenya normal
-- **Nom d'usuari:** usuari@domini.cat
+- **Nom d'usuari:** usuari1 (amb `auth_username_format = %Ln` a Dovecot, també `usuari1@educem.cat`)
+
+#### Fase 3 (opcional): demostrar que el relay necessita autenticació
+
+Mentre la xarxa interna sigui a `mynetworks` (apartat 05), el client pot enviar correu cap a qualsevol destí sense autenticar-se. Per veure la utilitat de SASL, deixem només la xarxa local del servidor:
+
+```bash
+sudo postconf -e 'mynetworks=127.0.0.0/8'
+sudo systemctl reload postfix
+```
+
+Des del client, sense autenticar-se:
+
+```bash
+telnet mail.educem.cat 25
+
+EHLO client.educem.cat
+MAIL FROM:<usuari1@educem.cat>
+RCPT TO:<algu@example.com>
+# Resposta: Relay access denied (codi 454 o 554)
+
+RCPT TO:<usuari2@educem.cat>
+# Resposta: 250 Ok (el destinatari és local: no és relay)
+QUIT
+```
+
+Els clients que s'autentiquen al port 587 (Thunderbird) continuen podent enviar correu.
 
 ### Verificació als Logs
 
@@ -228,7 +275,7 @@ Configuració al client:
 sudo grep "sasl_method" /var/log/mail.log
 
 # Sortida esperada:
-# ... mail postfix/submission/smtpd[1234]: ABC123: client=unknown[192.168.1.100], sasl_method=PLAIN, sasl_username=usuari@domini.cat
+# ... postfix/submission/smtpd[1234]: ABC123: client=client.educem.cat[192.168.1.50], sasl_method=PLAIN, sasl_username=usuari1
 
 # Veure autenticacions fallides
 sudo grep "authentication failed" /var/log/mail.log
@@ -239,16 +286,17 @@ sudo grep "$(date '+%b %d')" /var/log/mail.log | grep sasl_method
 
 ### Restriccions amb SASL
 
-**Permetre només usuaris autenticats:**
+**Permetre només usuaris autenticats (relay):**
 
 ```bash
 # /etc/postfix/main.cf
 smtpd_recipient_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,
-    reject_unauth_destination,
-    reject
+    reject_unauth_destination
 ```
+
+No afegiu `reject` al final de la llista: rebutjaria també el correu que altres servidors envien als vostres usuaris. `reject_unauth_destination` ja rebutja el relay no autoritzat.
 
 **Permetre relay només a autenticats:**
 
@@ -259,21 +307,30 @@ smtpd_relay_restrictions =
     defer_unauth_destination
 ```
 
-**Restriccions per remitent:**
+**Restriccions per remitent:** un usuari autenticat només pot fer servir la seva adreça com a remitent.
 
 ```bash
+# /etc/postfix/main.cf
 smtpd_sender_login_maps = hash:/etc/postfix/sender_login
-
-# Fitxer /etc/postfix/sender_login:
-# usuari@domini.cat    usuari@domini.cat
-# usuari2@domini.cat   usuari2@domini.cat
 
 smtpd_sender_restrictions =
     reject_sender_login_mismatch,
     permit_mynetworks,
-    permit_sasl_authenticated,
-    reject
+    permit_sasl_authenticated
 ```
+
+```bash
+# Fitxer /etc/postfix/sender_login: adreça → usuari SASL que la pot fer servir
+usuari1@educem.cat    usuari1
+usuari2@educem.cat    usuari2
+```
+
+```bash
+sudo postmap /etc/postfix/sender_login
+sudo systemctl reload postfix
+```
+
+`Nota:` Amb `reject_sender_login_mismatch`, un correu amb remitent `usuari1@educem.cat` que no s'ha autenticat com a `usuari1` es rebutja. Això inclou, per exemple, una prova amb `telnet` al port 25.
 
 ### Resolució de Problemes SASL
 
@@ -284,7 +341,7 @@ smtpd_sender_restrictions =
 sudo grep "auth" /var/log/mail.log | grep dovecot
 
 # Provar autenticació directament
-doveadm auth test usuari@domini.cat contrasenya
+doveadm auth test usuari1 contrasenya
 
 # Verificar socket
 ls -la /var/spool/postfix/private/auth
@@ -317,12 +374,12 @@ doveconf -n | grep -A 10 "service auth"
 ls -la /var/spool/postfix/private/
 ```
 
-**Problema: "Must issue a STARTTLS command first"**
+**Problema: "Must issue a STARTTLS command first" o l'EHLO no mostra AUTH**
 
 ```bash
-# El client intenta autenticar sense TLS
-# Configuració de Postfix:
-smtpd_tls_auth_only = yes  # Força TLS abans d'autenticar
+# El client intenta autenticar sense TLS i Postfix té:
+# smtpd_tls_auth_only = yes  (força TLS abans d'autenticar)
+postconf smtpd_tls_auth_only
 
 # Assegurar que el client utilitza STARTTLS o SSL/TLS
 ```
@@ -365,20 +422,18 @@ sudo grep "authentication failed" /var/log/mail.log | awk '{print $(NF-1)}' | so
 # Instal·lar fail2ban
 sudo apt install fail2ban
 
-# Configurar filtre per Postfix SASL
 # /etc/fail2ban/jail.local
 [postfix-sasl]
 enabled = true
-port = smtp,submission
-filter = postfix-sasl
-logpath = /var/log/mail.log
 maxretry = 3
 bantime = 3600
 ```
 
+El filtre, els ports i el fitxer de log de la presó `postfix-sasl` ja estan definits a `/etc/fail2ban/jail.conf`. A `jail.local` només s'activa i s'ajusta.
+
 ### Millors Pràctiques
 
-1. **Utilitzar sempre port 587 amb STARTTLS** (no 465 ni 25 per clients)
+1. **Utilitzar el port 587 amb STARTTLS o el 465 amb TLS implícit** per als clients (no el 25)
 2. **Requerir TLS** abans de permetre autenticació
 3. **Utilitzar contrasenyes fortes** per usuaris
 4. **Monitoritzar logs** regularment per detectar intents d'autenticació
@@ -393,14 +448,14 @@ bantime = 3600
 # 1. Dovecot té el socket configurat
 doveconf -n | grep -A 5 "service auth"
 
-# 2. Postfix té SASL activat
-postconf smtpd_sasl_auth_enable
+# 2. Postfix té SASL activat i AUTH només amb TLS
+postconf smtpd_sasl_auth_enable smtpd_tls_auth_only
 
 # 3. Port 587 escolta
 sudo ss -plutn | grep :587
 
 # 4. Es pot autenticar
-doveadm auth test usuari@domini.cat contrasenya
+doveadm auth test usuari1 contrasenya
 
 # 5. Els logs mostren autenticacions
 sudo grep sasl_method /var/log/mail.log | tail -5

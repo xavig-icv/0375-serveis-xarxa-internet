@@ -1,4 +1,4 @@
-## 10. Seguretat TLS/SSL en Correu
+## 07. Seguretat TLS/SSL en Correu
 
 ### Introducció a TLS/SSL
 
@@ -69,7 +69,7 @@ CLIENT                    SERVIDOR
 | -------------- | ---- | -------------------- | ------------------------ |
 | **SMTP**       | 25   | STARTTLS (opcional)  | Servidor a servidor      |
 | **Submission** | 587  | STARTTLS (recomanat) | Clients a servidor       |
-| **SMTPS**      | 465  | SSL/TLS directe      | Legacy (no l'aconsello)  |
+| **SMTPS**      | 465  | SSL/TLS directe      | Clients (RFC 8314)       |
 | **IMAP**       | 143  | STARTTLS (opcional)  | Sense xifrar per defecte |
 | **IMAPS**      | 993  | SSL/TLS directe      | Xifrat sempre            |
 | **POP3**       | 110  | STARTTLS (opcional)  | Sense xifrar per defecte |
@@ -78,12 +78,18 @@ CLIENT                    SERVIDOR
 ### Configuració TLS/SSL a Postfix
 
 ```bash
-# Opció 1: Certificat autosignat (només proves)
-sudo openssl req -new -x509 -days 365 -nodes -out /etc/ssl/certs/mail.crt -keyout /etc/ssl/private/mail.key
+# Opció 1: Certificat autosignat (només proves, és el que fem al laboratori)
+sudo openssl req -new -x509 -days 365 -nodes \
+    -out /etc/ssl/certs/mail.crt \
+    -keyout /etc/ssl/private/mail.key \
+    -subj "/C=ES/ST=Catalunya/L=Barcelona/O=EDUCEM/CN=mail.educem.cat" \
+    -addext "subjectAltName=DNS:mail.educem.cat"
 
-# Opció 2: Let's Encrypt (producció amb domini real)
-# sudo certbot certonly --standalone -d mail.domini.cat
+# Opció 2: Let's Encrypt (producció amb domini real, no al laboratori)
+# sudo certbot certonly --standalone -d mail.example.com
 ```
+
+El certificat ha de tenir el nom amb què els clients es connecten al servidor (`mail.educem.cat`) al camp SAN. Postfix i Dovecot llegeixen la clau privada com a root en arrencar, de manera que pot quedar amb permisos només per a root.
 
 **Configuració bàsica TLS a Postfix:**
 
@@ -102,8 +108,8 @@ smtpd_tls_cert_file = /etc/ssl/certs/mail.crt
 smtpd_tls_key_file = /etc/ssl/private/mail.key
 
 # O amb certificats de Let's Encrypt:
-#smtpd_tls_cert_file = /etc/letsencrypt/live/mail.domini.cat/fullchain.pem
-#smtpd_tls_key_file = /etc/letsencrypt/live/mail.domini.cat/privkey.pem
+#smtpd_tls_cert_file = /etc/letsencrypt/live/mail.educem.cat/fullchain.pem
+#smtpd_tls_key_file = /etc/letsencrypt/live/mail.educem.cat/privkey.pem
 
 
 # Activar TLS per rebre correus (SMTP)
@@ -137,13 +143,9 @@ smtp_tls_loglevel = 1
 # DANE (opcional - validació DNS)
 # smtp_dns_support_level = dnssec
 # smtp_tls_security_level = dane
-
-# Forçar autenticació només amb TLS
-smtpd_tls_auth_only = yes
-
-# Rebutjar clients amb certificats expirats
-smtpd_tls_ask_ccert = yes
 ```
+
+L'autenticació dels usuaris (SASL) la configurarem a l'apartat 08. Allà també obligarem a fer servir TLS per autenticar-se (`smtpd_tls_auth_only = yes`), després de fer les proves amb `telnet`.
 
 **Configuració del port Submission (587):**
 
@@ -166,6 +168,12 @@ submission inet n       -       y       -       -       smtpd
   -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
   -o milter_macro_daemon_name=ORIGINATING
 ```
+
+**Notes:**
+
+- A Ubuntu, el servei `submission` ja és a `master.cf`, però comentat: traieu el `#` de la línia `submission` i de les opcions `-o` que necessiteu.
+- Les línies d'opcions han de començar amb espais.
+- Les opcions de SASL d'aquest servei funcionaran quan Postfix pugui consultar Dovecot (apartat 08). Fins aleshores, al port 587 només es pot provar el TLS.
 
 **Aplicar configuració:**
 
@@ -198,8 +206,8 @@ ssl_cert = </etc/ssl/certs/mail.crt
 ssl_key = </etc/ssl/private/mail.key
 
 # O amb certificats de Let's Encrypt:
-# ssl_cert = </etc/letsencrypt/live/mail.domini.cat/fullchain.pem
-#ssl_key = </etc/letsencrypt/live/mail.domini.cat/privkey.pem
+# ssl_cert = </etc/letsencrypt/live/mail.educem.cat/fullchain.pem
+#ssl_key = </etc/letsencrypt/live/mail.educem.cat/privkey.pem
 
 
 # Protocols TLS permesos (només 1.2 i 1.3)
@@ -211,11 +219,7 @@ ssl_cipher_list = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDH
 # Preferir xifratges del servidor
 ssl_prefer_server_ciphers = yes
 
-# Paràmetres DH (Diffie-Hellman)
-ssl_dh = </etc/dovecot/dh.pem
-
-# Generar paràmetres DH (només cal fer-ho una vegada):
-# openssl dhparam -out /etc/dovecot/dh.pem 2048
+# Paràmetres DH: no calen amb la llista de xifratges ECDHE anterior (vegeu l'apartat 06)
 
 # Deshabilitar compressió SSL (prevenir atac CRIME)
 ssl_options = no_compression
@@ -228,9 +232,6 @@ ssl_options = no_compression
 **Aplicar configuració:**
 
 ```bash
-# Generar paràmetres DH (si no existeix)
-sudo openssl dhparam -out /etc/dovecot/dh.pem 2048
-
 # Recarregar Dovecot
 sudo systemctl reload dovecot
 
@@ -268,17 +269,20 @@ service pop3-login {
 
 ### Proves de Connexió TLS/SSL
 
+Al servidor, connecteu-vos a `localhost`. Al client, connecteu-vos a `mail.educem.cat`, el nom del certificat.
+
 **Test 1: Provar STARTTLS amb openssl (SMTP):**
 
 ```bash
-# Connectar al port 25 o 587
-openssl s_client -connect mail.domini.cat:587 -starttls smtp -crlf
+# Al servidor: port 25 o 587
+openssl s_client -connect localhost:25 -starttls smtp -crlf
+openssl s_client -connect localhost:587 -starttls smtp -crlf
 
 # Ha de mostrar informació del certificat
 # Comprovar:
 # - Protocol: TLSv1.2 o TLSv1.3
 # - Cipher: ECDHE-RSA-AES256-GCM-SHA384 o similar
-# - Verify return code: 0 (ok) si el certificat és vàlid
+# - Verify return code: 18 (self-signed certificate): és normal amb un certificat autosignat
 
 # Provar comandes SMTP:
 EHLO localhost
@@ -288,11 +292,14 @@ QUIT
 **Test 2: Provar IMAPS (993):**
 
 ```bash
-# Connectar amb SSL/TLS directe
-openssl s_client -connect mail.domini.cat:993 -crlf
+# Al servidor
+openssl s_client -connect localhost:993 -crlf
+
+# Al client
+openssl s_client -connect mail.educem.cat:993 -crlf
 
 # Provar comandes IMAP:
-a001 LOGIN usuari@domini.cat contrasenya
+a001 LOGIN usuari1 contrasenya
 a002 LIST "" "*"
 a003 LOGOUT
 ```
@@ -300,10 +307,10 @@ a003 LOGOUT
 **Test 3: Provar POP3S (995):**
 
 ```bash
-openssl s_client -connect mail.domini.cat:995 -crlf
+openssl s_client -connect localhost:995 -crlf
 
 # Provar comandes POP3:
-USER usuari@domini.cat
+USER usuari1
 PASS contrasenya
 STAT
 QUIT
@@ -313,13 +320,13 @@ QUIT
 
 ```bash
 # Veure informació del certificat
-openssl s_client -connect mail.domini.cat:993 -showcerts
+openssl s_client -connect mail.educem.cat:993 -showcerts
 
 # Verificar dates d'expiració
-echo | openssl s_client -connect mail.domini.cat:993 2>/dev/null | openssl x509 -noout -dates
+echo | openssl s_client -connect mail.educem.cat:993 2>/dev/null | openssl x509 -noout -dates
 
 # Verificar emissor
-echo | openssl s_client -connect mail.domini.cat:993 2>/dev/null | openssl x509 -noout -issuer
+echo | openssl s_client -connect mail.educem.cat:993 2>/dev/null | openssl x509 -noout -issuer
 ```
 
 **Test 5: Test de seguretat SSL:**
@@ -330,8 +337,8 @@ git clone https://github.com/drwetter/testssl.sh.git
 cd testssl.sh
 
 # Provar servidor
-./testssl.sh mail.domini.cat:993
-./testssl.sh mail.domini.cat:587
+./testssl.sh mail.educem.cat:993
+./testssl.sh mail.educem.cat:587
 
 # Analitza:
 # - Protocols suportats
@@ -358,7 +365,7 @@ sudo grep "certificate" /var/log/mail.log
 ### Millors Pràctiques
 
 1. **Utilitzar només TLS 1.2 i 1.3**
-2. **Certificats vàlids** (Let's Encrypt recomanat)
+2. **Certificats vàlids** (en producció, d'una CA com Let's Encrypt; al laboratori, autosignats)
 3. **Renovar certificats** abans que caduquin
 4. **Forçar TLS** al port submission (587)
 5. **Xifratges moderns** (ECDHE, AES-GCM)

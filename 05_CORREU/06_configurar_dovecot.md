@@ -37,8 +37,8 @@ sudo nano /etc/dovecot/dovecot.conf
 ```
 
 ```bash
-# Protocols actius
-protocols = imap pop3 lmtp
+# Protocols actius (lmtp només si s'ha instal·lat el paquet dovecot-lmtpd: apartat 13)
+protocols = imap pop3
 
 # Només si acceptem IMAP
 # protocols = imap
@@ -47,6 +47,8 @@ protocols = imap pop3 lmtp
 !include_try /usr/share/dovecot/protocols.d/*.protocol
 !include conf.d/*.conf
 ```
+
+`Nota:` A Ubuntu no cal definir `protocols`: cada paquet instal·lat (`dovecot-imapd`, `dovecot-pop3d`...) l'activa a `/usr/share/dovecot/protocols.d/`. Si hi poseu un protocol que no té el paquet instal·lat, Dovecot no arrenca.
 
 ### Configuració de Bústies (10-mail.conf)
 
@@ -69,17 +71,16 @@ mail_location = maildir:~/Maildir
 # mbox:~/mail:INBOX=/var/mail/%u:INDEX=/var/indexes/%u
 
 # Variables disponibles:
-# %u = nom d'usuari complet (usuari@domini.cat)
+# %u = nom d'usuari complet (usuari@educem.cat)
 # %n = part local (usuari)
-# %d = domini (domini.cat)
+# %d = domini (educem.cat)
 # %h = directori home
 
-# Usuari i grup del procés de correu (per usuaris virtuals)
-mail_uid = vmail
-mail_gid = vmail
-# O utilitzar l'usuari del sistema:
-# mail_uid =
-# mail_gid =
+# Usuari i grup del procés de correu: NOMÉS per a usuaris virtuals (apartat 10).
+# Amb usuaris del sistema no s'han de definir: cada usuari accedeix a la seva bústia
+# amb el seu propi UID. Si l'usuari vmail no existeix, Dovecot no funciona.
+# mail_uid = vmail
+# mail_gid = vmail
 
 # Directori base per bústies
 # mail_home = /var/mail/%d/%n
@@ -125,6 +126,10 @@ sudo nano /etc/dovecot/conf.d/10-auth.conf
 # Deshabilitar autenticació en text pla (excepte amb SSL/TLS)
 disable_plaintext_auth = yes
 
+# Treure el domini del nom d'usuari (usuari1@educem.cat → usuari1) i passar-lo a minúscules.
+# Així els usuaris del sistema poden entrar amb el nom curt o amb l'adreça completa.
+auth_username_format = %Ln
+
 # Mecanismes d'autenticació permesos
 auth_mechanisms = plain login
 
@@ -147,6 +152,13 @@ auth_cache_negative_ttl = 1 hour
 # !include auth-checkpassword.conf.ext
 # !include auth-static.conf.ext
 ```
+
+**Proves sense xifrat des del client (temporal):**
+
+- `disable_plaintext_auth = yes` impedeix iniciar sessió amb contrasenya sense xifrat (IMAP 143 o POP3 110 sense TLS) des d'un altre equip.
+- Des del mateix servidor sempre es permet, perquè Dovecot considera segures les connexions locals.
+- Per fer proves amb `telnet` des del client abans de configurar TLS, es pot posar **temporalment** `disable_plaintext_auth = no`, i tornar-lo a `yes` en acabar.
+- A Dovecot 2.4 aquesta directiva s'anomena `auth_allow_cleartext` i el valor és l'invers.
 
 **Fitxer auth-system.conf.ext (usuaris del sistema):**
 
@@ -233,18 +245,14 @@ service auth {
     group = postfix
   }
 
-  # Socket per auth-userdb
-  unix_listener auth-userdb {
-    mode = 0600
-    user = vmail
-    # group =
-  }
+  # Socket auth-userdb: amb usuaris del sistema es deixa amb els valors per defecte.
+  # (user = vmail només amb usuaris virtuals, apartat 10: si vmail no existeix, Dovecot no arrenca)
 
   # Usuari del procés d'autenticació
   # user = $default_internal_user
 }
 
-# Servei de lliurament local (LDA)
+# Servei de lliurament LMTP (només amb el paquet dovecot-lmtpd: apartat 13, filtres Sieve)
 service lmtp {
   unix_listener /var/spool/postfix/private/dovecot-lmtp {
     mode = 0600
@@ -275,8 +283,8 @@ ssl_cert = </etc/dovecot/private/dovecot.pem
 ssl_key = </etc/dovecot/private/dovecot.key
 
 # O amb Let's Encrypt:
-# ssl_cert = </etc/letsencrypt/live/mail.domini.cat/fullchain.pem
-# ssl_key = </etc/letsencrypt/live/mail.domini.cat/privkey.pem
+# ssl_cert = </etc/letsencrypt/live/mail.educem.cat/fullchain.pem
+# ssl_key = </etc/letsencrypt/live/mail.educem.cat/privkey.pem
 
 # Certificat de la CA
 # ssl_ca = </etc/ssl/certs/ca-certificates.crt
@@ -293,12 +301,13 @@ ssl_cipher_list = ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDH
 # Preferir els xifratges del servidor
 ssl_prefer_server_ciphers = yes
 
-# Paràmetres DH
-ssl_dh = </etc/dovecot/dh.pem
-
-# Generar dh.pem:
-# openssl dhparam -out /etc/dovecot/dh.pem 2048
+# Paràmetres DH: només calen amb xifratges DHE. Amb la llista anterior (ECDHE) no fan falta.
+# Si s'activa, el fitxer ha d'existir abans de reiniciar; si no, Dovecot no arrenca:
+#   sudo openssl dhparam -out /etc/dovecot/dh.pem 2048
+# ssl_dh = </etc/dovecot/dh.pem
 ```
+
+A Ubuntu, la instal·lació de Dovecot genera un certificat autosignat a `/etc/dovecot/private/` que ja permet fer servir IMAPS i POP3S. A l'apartat 07 el substituirem pel certificat del servidor de correu.
 
 ### Configuració IMAP (20-imap.conf)
 
@@ -504,6 +513,7 @@ mail_location = maildir:~/Maildir
 
 ```bash
 disable_plaintext_auth = yes
+auth_username_format = %Ln
 auth_mechanisms = plain login
 !include auth-system.conf.ext
 ```
@@ -642,11 +652,11 @@ sudo grep "auth" /var/log/mail.log | tail -20
 # Verificar mail_location
 doveconf mail_location
 
-# Verificar que existeix el directori
+# Verificar que existeix el directori (com a l'usuari)
 ls -la ~/Maildir/
 
-# Crear Maildir si no existeix
-maildirmake ~/Maildir
+# Si no existeix, envieu un correu a l'usuari: Postfix crea el Maildir amb el primer lliurament
+echo "Prova" | mail -s "Prova" usuari1@educem.cat
 ```
 
 ### Millors Pràctiques

@@ -11,7 +11,7 @@ sudo apt install postfix
 
 # Durant la instal·lació apareixerà un assistent de configuració:
 # - Tipus de configuració: "Internet Site"
-# - System mail name: domini.cat (el vostre domini --> educem.cat)
+# - System mail name: educem.cat (el domini del laboratori)
 ```
 
 ### Verificar la Instal·lació
@@ -89,21 +89,35 @@ sudo ss -plutn | grep :25
 # tcp   0   0 0.0.0.0:25   0.0.0.0:*   LISTEN   1234/master
 ```
 
-**Provar l'enviament de correu local:**
+**Usuaris de correu:**
+
+Els usuaris de correu del servidor són **usuaris del sistema**: cada usuari de Linux té la seva bústia. Per a les proves del tema en crearem dos:
 
 ```bash
-# Instal·lar l'eina "mail" per enviar correus
+sudo adduser usuari1
+sudo adduser usuari2
+```
+
+Les seves adreces de correu són `usuari1@educem.cat` i `usuari2@educem.cat`. Als exemples, `usuari` representa qualsevol d'aquests usuaris.
+
+**Provar l'enviament de correu local (al servidor):**
+
+```bash
+# Instal·lar l'eina "mail" al servidor (no al client: hi instal·laria un altre Postfix)
 sudo apt install mailutils
 
-# Enviar un correu de prova a un usuari local (el del vostre admin)
-echo "Prova de correu" | mail -s "Test" usuari@localhost
+# Enviar un correu de prova a un usuari local
+echo "Prova de correu" | mail -s "Test" usuari1@localhost
 
-# Verificar que s'ha rebut
+# Verificar que s'ha lliurat (status=sent)
 sudo tail -f /var/log/mail.log
 
-# O llegir-lo de la bústia
+# Llegir-lo com a usuari1
+su - usuari1
 mail
 ```
+
+`Nota:` Amb la configuració inicial, Postfix desa el correu a `/var/mail/usuari1` (format mbox), on el busca l'ordre `mail`. Quan configurem el format Maildir (apartat 05), caldrà indicar la bústia a l'ordre `mail`: `mail -f ~/Maildir`.
 
 ### Eines per provar Protocols de Correu
 
@@ -118,11 +132,11 @@ telnet localhost 25
 
 # Un cop connectat, escriure les comandes SMTP:
 EHLO localhost
-MAIL FROM:<usuari1@domini.cat>
-RCPT TO:<usuari2@domini.cat>
+MAIL FROM:<usuari1@educem.cat>
+RCPT TO:<usuari2@educem.cat>
 DATA
-From: usuari1@domini.cat
-To: usuari2@domini.cat
+From: usuari1@educem.cat
+To: usuari2@educem.cat
 Subject: Prova
 
 Aquest és un correu de prova.
@@ -145,7 +159,7 @@ postconf | grep myhostname
 postconf myhostname
 
 # Exemple de com modificar un paràmetre després de la instal·lació
-sudo postconf -e 'myhostname=mail.domini.cat'
+sudo postconf -e 'myhostname=mail.educem.cat'
 ```
 
 **2. /etc/postfix/master.cf**
@@ -282,11 +296,13 @@ sudo postcat -q ID_CORREU
 # Forçar reenviament
 sudo postqueue -f
 
-# Verificar connectivitat DNS
-dig MX mail.educem.cat
+# Verificar el registre MX del domini (el servidor ha de resoldre amb el seu BIND)
+dig MX educem.cat
 ```
 
 ### Proves d'Enviament de Correus
+
+Al laboratori enviem correu **entre usuaris locals** (`@educem.cat`). Els servidors de correu d'Internet rebutjarien els nostres correus, perquè el domini no existeix i la IP és privada. A més, moltes xarxes bloquegen el port 25 de sortida.
 
 **Mètode 1: Amb la comanda mail**
 
@@ -295,19 +311,19 @@ dig MX mail.educem.cat
 sudo apt install mailutils
 
 # Enviar un correu simple
-echo "Contingut del missatge" | mail -s "Assumpte" destinatari@domini.cat
+echo "Contingut del missatge" | mail -s "Assumpte" usuari2@educem.cat
 
 # Enviar un correu amb un fitxer adjunt
-echo "Missatge" | mail -s "Prova" -A /ruta/fitxer.pdf usuari@domini.cat
+echo "Missatge" | mail -s "Prova" -A /ruta/fitxer.pdf usuari2@educem.cat
 ```
 
 **Mètode 2: Amb sendmail**
 
 ```bash
-# Enviar correu amb sendmail
-sendmail destinatari@example.com << EOF
-From: remitent@domini.cat
-To: destinatari@example.com
+# Enviar correu amb sendmail (l'ordre la proporciona Postfix)
+sendmail usuari2@educem.cat << EOF
+From: usuari1@educem.cat
+To: usuari2@educem.cat
 Subject: Prova
 
 Aquest és un correu de prova.
@@ -320,13 +336,13 @@ EOF
 telnet localhost 25
 
 # Comandes:
-EHLO domini.cat
-MAIL FROM:<remitent@domini.cat>
-RCPT TO:<destinatari@example.com>
+EHLO educem.cat
+MAIL FROM:<usuari1@educem.cat>
+RCPT TO:<usuari2@educem.cat>
 DATA
 Subject: Prova SMTP
-From: remitent@domini.cat
-To: destinatari@example.com
+From: usuari1@educem.cat
+To: usuari2@educem.cat
 
 Missatge de prova enviat manualment via SMTP.
 .
@@ -337,6 +353,8 @@ QUIT
 
 ```bash
 sudo apt install swaks
-# Enviar un correu simple
-swaks --to destinatari@gmail.com --from usuari@domini.cat --server mail.domini.cat
+# Enviar un correu simple al servidor local
+swaks --to usuari2@educem.cat --from usuari1@educem.cat --server localhost
 ```
+
+Amb `--server localhost`, swaks no busca el registre MX del domini i es connecta directament al Postfix del mateix servidor.

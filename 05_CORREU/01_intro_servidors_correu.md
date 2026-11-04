@@ -18,7 +18,7 @@ El servei de correu electrònic és responsable de:
 CLIENT (Thunderbird/Mail)              SERVIDOR CORREU
       │                                       │
       │  1. Enviar correu (SMTP)              │
-      │    MAIL FROM: usuari@domini.cat       │
+      │    MAIL FROM: usuari@educem.cat       │
       │    RCPT TO: desti@example.com         │
       │──────────────────────────────────────>│
       │                                       │
@@ -28,7 +28,7 @@ CLIENT (Thunderbird/Mail)              SERVIDOR CORREU
       │                                       │    - Emmagatzema/Reenvia
       │                                       │
       │  3. Rebre correu (POP3/IMAP)          │
-      │    USER usuari@domini.cat             │
+      │    USER usuari@educem.cat             │
       │    PASS ********                      │
       │<──────────────────────────────────────│
       │                                       │
@@ -63,7 +63,7 @@ Un servidor de correu està composat per diversos components que treballen conju
 
 - És el MTA més utilitzat actualment
 - Suporta el protocol SMTP
-- És segurr, ràpid i proporciona bon rendiment amb un alt volum
+- És segur, ràpid i proporciona bon rendiment amb un alt volum
 - Compatible amb Sendmail
 
 **Dovecot (MDA)**
@@ -103,7 +103,7 @@ Clients (Thunderbird, Webmail)
 | ------- | -------- | ----------------------------------- | ---------------------- |
 | **25**  | SMTP     | Transferència entre servidors       | No (opcional STARTTLS) |
 | **587** | SMTP     | Enviament per clients (submission)  | STARTTLS               |
-| **465** | SMTPS    | SMTP amb SSL/TLS (no el recomano)   | SSL/TLS                |
+| **465** | SMTPS    | SMTP amb TLS implícit (RFC 8314)    | SSL/TLS                |
 | **110** | POP3     | Recepció de correu (descàrrega)     | No                     |
 | **995** | POP3S    | POP3 amb SSL/TLS                    | SSL/TLS                |
 | **143** | IMAP     | Recepció de correu (sincronització) | No                     |
@@ -112,7 +112,7 @@ Clients (Thunderbird, Webmail)
 ### Flux Complet d'un Correu Electrònic
 
 ```
-1. USUARI A (usuari@domini.cat) escriu un correu
+1. USUARI A (usuari@educem.cat) escriu un correu
    ↓
 2. CLIENT (Thunderbird) connecta a POSTFIX via SMTP:587
    ↓
@@ -130,7 +130,7 @@ Clients (Thunderbird, Webmail)
    ↓
 9. DOVECOT emmagatzema correu a bústia d'USUARI B
    ↓
-10. USUARI B consulta correu amb IMAP:143
+10. USUARI B consulta correu amb IMAPS:993
     ↓
 11. DOVECOT serveix missatge a CLIENT d'USUARI B
 ```

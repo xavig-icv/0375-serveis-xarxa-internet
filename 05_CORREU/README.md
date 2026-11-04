@@ -1,5 +1,7 @@
 # 05 SERVIDORS DE CORREU - Administració de Servidors de Correu
 
+> Escenari del laboratori (IPs, domini `educem.cat`, `mail.educem.cat` → `192.168.1.2`): [00_RECURSOS/01_escenari_laboratori.md](../00_RECURSOS/01_escenari_laboratori.md)
+
 ## Índex de continguts
 
 1. [Introducció als Servidors de Correu](./01_intro_servidors_correu.md)

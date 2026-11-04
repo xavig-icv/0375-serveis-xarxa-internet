@@ -18,38 +18,42 @@ sudo postconf -e 'paràmetre=valor'
 
 ```bash
 # Nom del sistema de correu (FQDN del servidor)
-myhostname = mail.domini.cat
+myhostname = mail.educem.cat
 
 # Nom de domini del sistema
-mydomain = domini.cat
+mydomain = educem.cat
 
 # Origen dels correus enviats localment
 myorigin = $mydomain
 
 # Interfícies de xarxa on escoltar
 # inet_interfaces = all
-# inet_interfaces = localhost  # Només local
-inet_interfaces = 192.168.1.2, localhost  # IPs específiques
+# Només local:
+# inet_interfaces = localhost
+# IPs específiques (la xarxa interna i localhost):
+inet_interfaces = 192.168.1.2, localhost
 
 # Protocols IP (IPv4, IPv6 o ambdós)
 inet_protocols = ipv4
 # inet_protocols = all  # IPv4 + IPv6
 
-# Xarxes de confiança (poden enviar correus sense autenticació servidor-servidor)
+# Xarxes de confiança: poden enviar correu cap a qualsevol destí sense autenticar-se.
+# Al principi hi posem la xarxa interna per fer les primeres proves des del client.
+# A l'apartat 08 (SASL) la traurem: els clients s'hauran d'autenticar per enviar.
 mynetworks = 127.0.0.0/8, 192.168.1.0/24
 
 # Destinacions finals (els correus pels següents dominis es lliuren localment)
 mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
 
 # Carpeta de bústies (format recomanat Maildir)
-# home_mailbox = mail/  # Per format mbox
+# Postfix crea ~/Maildir/ amb el primer correu que lliura a cada usuari
 home_mailbox = Maildir/
 
-# Mida màxima del missatge (en bytes)
-message_size_limit = 10485760  # 10 MB
+# Mida màxima del missatge (en bytes): 10 MB
+message_size_limit = 10485760
 
-# Mida màxima de la bústia
-mailbox_size_limit = 0  # 0 = il·limitat
+# Mida màxima de la bústia (0 = il·limitat)
+mailbox_size_limit = 0
 
 # Recipient delimiter (per adreces amb + )
 recipient_delimiter = +
@@ -59,6 +63,11 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 ```
 
+**Notes:**
+
+- A `main.cf`, els comentaris han d'anar en una línia pròpia, començada per `#`. Un comentari al final d'una línia es considera part del valor, i Postfix dona error (`bad parameter value`).
+- Amb el format Maildir, l'ordre `mail` sense arguments busca el correu a `/var/mail/usuari` i respon `No mail for usuari`. Per llegir la bústia: `mail -f ~/Maildir` (apartat 09).
+
 ### Estructura de main.cf (Recomanada)
 
 ```bash
@@ -66,8 +75,8 @@ alias_database = hash:/etc/aliases
 # IDENTIFICACIÓ DEL SERVIDOR
 # ============================================
 # Que coincideixi amb el MX del servidor DNS que teniu configurat
-myhostname = mail.domini.cat
-mydomain = domini.cat
+myhostname = mail.educem.cat
+mydomain = educem.cat
 myorigin = $mydomain
 
 # ============================================
@@ -100,7 +109,8 @@ recipient_delimiter = +
 # ============================================
 # COMPATIBILITAT
 # ============================================
-compatibility_level = 2
+# Valor que porta Ubuntu 24.04 (no el baixeu)
+compatibility_level = 3.6
 
 # ============================================
 # SEGURETAT BÀSICA
@@ -119,7 +129,7 @@ Aquí principalment es podrà configurar el format d'enviament de correus del se
 
 - SMTP estàndard (port 25) - Transferència entre servidors
 - Submission (port 587) - Enviament per clients autenticats
-- SMTPS (port 465) - SMTP amb SSL/TLS (no el recomano)
+- SMTPS (port 465) - SMTP amb TLS implícit (l'RFC 8314 el recomana per als clients; al laboratori farem servir el 587)
 
 ### Configuració d'Alias
 
@@ -141,10 +151,10 @@ spam:          root
 webmaster:     root
 
 # Usuaris específics
-root:          admin@domini.cat
+root:          admin@educem.cat
 suport:        usuari1, usuari2
 info:          usuari1
-vendes:        comercial@domini.cat
+vendes:        comercial@educem.cat
 
 # Llistes de distribució
 equip:         usuari1, usuari2, usuari3
@@ -189,17 +199,16 @@ default_process_limit = 100
 
 ### Configuració de Logging
 
-```bash
-# Nivell de detall dels logs
-# 0 = només errors crítics
-# 1 = errors i advertències (per defecte)
-# 2 = informació addicional
-# 3 = debug
-maillog_file = /var/log/postfix.log
-maillog_file_prefixes = /var/log
+Per defecte, Postfix envia els logs al syslog i queden a **`/var/log/mail.log`**. És el fitxer que fem servir a tot el tema.
 
-# O utilitzar syslog (per defecte)
-# Els logs aniran a /var/log/mail.log
+```bash
+# Opcional: Postfix escriu directament en un fitxer propi (servei postlog de master.cf).
+# Si ho activeu, els logs de Postfix ja no apareixen a /var/log/mail.log.
+# maillog_file = /var/log/postfix.log
+
+# Més detall als logs només per a uns clients concrets (per diagnosticar un problema)
+# debug_peer_list = 192.168.1.50
+# debug_peer_level = 2
 ```
 
 ### Comandes de Configuració
@@ -219,12 +228,12 @@ postconf myhostname
 postconf mydestination
 
 # Modificar un paràmetre
-sudo postconf -e 'myhostname=mail.domini.cat'
-sudo postconf -e 'mydomain=domini.cat'
+sudo postconf -e 'myhostname=mail.educem.cat'
+sudo postconf -e 'mydomain=educem.cat'
 sudo postconf -e 'myorigin=$mydomain'
 
 # Múltiples paràmetres a la vegada
-sudo postconf -e 'myhostname=mail.domini.cat' -e 'mydomain=domini.cat'
+sudo postconf -e 'myhostname=mail.educem.cat' -e 'mydomain=educem.cat'
 
 # Verificar sintaxi de la configuració
 sudo postfix check
@@ -245,8 +254,8 @@ postconf -Mn
 
 ```bash
 # Identificació
-myhostname = mail.domini.cat
-mydomain = domini.cat
+myhostname = mail.educem.cat
+mydomain = educem.cat
 myorigin = $mydomain
 
 # Xarxa
@@ -316,13 +325,13 @@ sudo tail -f /var/log/mail.log
 
 ```bash
 # Enviar correu a usuari local
-echo "Test de configuració" | mail -s "Prova" usuari@localhost
+echo "Test de configuració" | mail -s "Prova" usuari1@localhost
 
 # Verificar als logs
 sudo tail -f /var/log/mail.log
 
-# Verificar a la bústia
-ls -la ~/Maildir/new/
+# Verificar que Postfix ha creat la bústia Maildir i hi ha deixat el correu
+sudo ls -la /home/usuari1/Maildir/new/
 ```
 
 **Test 2: Verificar paràmetres**
@@ -338,20 +347,23 @@ postconf mydestination
 postconf mynetworks
 ```
 
-**Test 3: Provar restriccions**
+**Test 3: Provar destinataris locals**
 
 ```bash
-# Connectar amb telnet i provar restriccions
+# Connectar amb telnet
 telnet localhost 25
 
 EHLO test.example.com
 MAIL FROM:<test@example.com>
-RCPT TO:<usuari@domini.cat>
-# Ha de permetre si domini.cat està a mydestination
+RCPT TO:<usuari1@educem.cat>
+# 250 Ok: educem.cat és a mydestination i usuari1 existeix
 
-RCPT TO:<extern@altredomain.com>
-# Ha de rebutjar si no està autenticat (reject_unauth_destination)
+RCPT TO:<noexisteix@educem.cat>
+# 550 5.1.1 ... User unknown in local recipient table
+QUIT
 ```
+
+`Nota:` Des del mateix servidor (o des de la xarxa interna, que és a `mynetworks`), Postfix accepta enviar correu a qualsevol destí: `permit_mynetworks`. La prova que el relay sense autenticació es rebutja la farem a l'apartat 08, quan traiem la xarxa interna de `mynetworks`.
 
 ### Resolució de Problemes de Configuració
 

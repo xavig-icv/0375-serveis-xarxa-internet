@@ -13,6 +13,8 @@ sudo apt install dovecot-core dovecot-imapd dovecot-pop3d
 dovecot --version
 ```
 
+`Nota:` Ubuntu 24.04 porta Dovecot 2.3, que és la versió dels exemples d'aquest tema. Dovecot 2.4 (per exemple, la de Debian 13) canvia el nom de moltes directives, com `mail_location` o `disable_plaintext_auth`. Si `dovecot --version` mostra una versió 2.4, consulteu la documentació d'aquesta versió.
+
 **Paquets inclosos a Dovecot:**
 
 | Paquet                   | Descripció                          |
@@ -183,6 +185,8 @@ grep mail_location /etc/dovecot/conf.d/10-mail.conf
 mail_location = maildir:~/Maildir
 ```
 
+Postfix també ha de lliurar el correu en format Maildir (`home_mailbox = Maildir/`, apartat 05). Si no, Postfix el desa a `/var/mail/usuari` i Dovecot mostra la bústia buida.
+
 **3. /etc/dovecot/conf.d/10-auth.conf**
 
 Configuració d'autenticació:
@@ -217,8 +221,9 @@ sudo doveadm who
 # Buscar missatges a la bústia d'un usuari
 sudo doveadm search -u usuari ALL
 
-# Elimina del disc missatges esborrats per l'usuari
-sudo doveadm expunge -u usuari mailbox INBOX ALL
+# Elimina del disc els missatges que l'usuari ha marcat com a esborrats
+# (ALL en lloc de DELETED esborraria TOTS els missatges de la bústia)
+sudo doveadm expunge -u usuari mailbox INBOX DELETED
 
 # Veure les quotes d'un usuari
 sudo doveadm quota get -u usuari
@@ -359,11 +364,11 @@ a003 OK Logout completed
 
 **Mètode 3: Amb un client de correu (Thunderbird)**
 
-Configuració manual a Thunderbird:
+Des del client Ubuntu, Thunderbird s'ha de connectar amb xifrat. Dovecot no accepta contrasenyes sense xifrar des d'un altre equip (`disable_plaintext_auth = yes`). La configuració completa és a l'apartat 09:
 
-- Servidor entrant: localhost (o IP servidor)
-- Protocol: IMAP o POP3
-- Port: 143 (IMAP) o 110 (POP3)
-- Seguretat: Sense (o STARTTLS si està configurat)
+- Servidor entrant: mail.educem.cat
+- Protocol: IMAP
+- Port: 993
+- Seguretat: SSL/TLS
 - Autenticació: Contrasenya normal
-- Nom d'usuari: usuari (o usuari@domini.cat)
+- Nom d'usuari: usuari1 (l'usuari del sistema)
