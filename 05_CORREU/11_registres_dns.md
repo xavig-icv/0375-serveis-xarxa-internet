@@ -1,8 +1,13 @@
-## 15. Registres DNS per Correu (MX, SPF, DKIM, DMARC)
+## 11. Registres DNS per Correu (MX, SPF, DKIM, DMARC)
 
 ### Introducció
 
 Els registres DNS són essencials per al correu electrònic. Defineixen com els altres servidors troben i verifiquen el teu servidor de correu.
+
+Al laboratori, els registres van a la zona `educem.cat` del Tema 1 (`/etc/bind/zones/db.educem.cat`), al servidor DNS primari:
+
+- Els registres `MX` i `A` de `mail` ja hi són des del Tema 1: comproveu-los, no els dupliqueu.
+- Cada vegada que afegiu o modifiqueu un registre, **incrementeu el serial** i recarregueu la zona (`sudo rndc reload`). Si no, el secundari no s'actualitza.
 
 ### Registre MX (Mail eXchanger)
 
@@ -11,7 +16,7 @@ Els registres DNS són essencials per al correu electrònic. Defineixen com els 
 **Format:**
 
 ```
-domini.cat.    IN    MX    10    mail.domini.cat.
+educem.cat.    IN    MX    10    mail.educem.cat.
 ```
 
 **Prioritat:** Número més baix = prioritat més alta.
@@ -19,15 +24,15 @@ domini.cat.    IN    MX    10    mail.domini.cat.
 **Exemple amb múltiples servidors:**
 
 ```dns
-domini.cat.    IN    MX    10    mail1.domini.cat.
-domini.cat.    IN    MX    20    mail2.domini.cat.
+educem.cat.    IN    MX    10    mail1.educem.cat.
+educem.cat.    IN    MX    20    mail2.educem.cat.
 ```
 
 **Configurar:**
 
 ```bash
 # A la zona DNS
-@ IN MX 10 mail.domini.cat.
+@ IN MX 10 mail.educem.cat.
 
 # També cal el registre A per al servidor
 mail IN A 192.168.1.2
@@ -36,8 +41,8 @@ mail IN A 192.168.1.2
 **Verificar:**
 
 ```bash
-dig MX domini.cat
-nslookup -type=MX domini.cat
+dig MX educem.cat
+nslookup -type=MX educem.cat
 ```
 
 ### Registre A/AAAA
@@ -45,18 +50,20 @@ nslookup -type=MX domini.cat
 **Funció:** Resol el nom del servidor a una IP.
 
 ```dns
-mail.domini.cat.    IN    A      192.168.1.2
+mail.educem.cat.    IN    A      192.168.1.2
 ```
 
 ### Registre PTR (DNS Invers)
 
 **Funció:** Resol IP a nom de host. Crucial per evitar ser marcat com spam.
 
-**Configurar al proveïdor d'IP:**
+A Internet, el PTR de la IP pública del servidor de correu el configura el proveïdor d'Internet, i ha de coincidir amb el nom del servidor (`myhostname`):
 
 ```
-192.168.1.2    →    mail.domini.cat
+IP pública del servidor    →    mail.example.com
 ```
+
+Al laboratori, la zona inversa és nostra (Tema 1) i la `192.168.1.2` hi té el PTR `ns1.educem.cat`. Cada IP ha de tenir un sol PTR, i per al correu intern del laboratori n'hi ha prou amb aquest.
 
 **Verificar:**
 
@@ -72,7 +79,7 @@ host 192.168.1.2
 **Format:** Registre TXT
 
 ```dns
-domini.cat.    IN    TXT    "v=spf1 ip4:192.168.1.2 -all"
+educem.cat.    IN    TXT    "v=spf1 ip4:192.168.1.2 -all"
 ```
 
 Amb el `-all` rebutgem tota la resta de servidors que no siguin 192.168.1.2
@@ -93,8 +100,8 @@ v=spf1 ip4:192.168.1.1 ip4:192.168.1.2 -all
 **Verificar SPF en local:**
 
 ```bash
-dig TXT domini.cat
-nslookup -type=TXT domini.cat
+dig TXT educem.cat
+nslookup -type=TXT educem.cat
 ```
 
 ### Registre DKIM (DomainKeys Identified Mail)
@@ -111,14 +118,18 @@ sudo apt install opendkim opendkim-tools
 
 ```bash
 # Crear directori
-sudo mkdir -p /etc/opendkim/keys/domini.cat
+sudo mkdir -p /etc/opendkim/keys/educem.cat
 
 # Generar clau
-sudo opendkim-genkey -b 2048 -d domini.cat -D /etc/opendkim/keys/domini.cat -s default -v
+sudo opendkim-genkey -b 2048 -d educem.cat -D /etc/opendkim/keys/educem.cat -s default -v
 
 # Resultat:
 # - default.private (clau privada)
 # - default.txt (clau pública per DNS)
+
+# El servei opendkim s'executa amb l'usuari opendkim: ha de poder llegir la clau privada
+sudo chown -R opendkim:opendkim /etc/opendkim/keys
+sudo chmod 600 /etc/opendkim/keys/educem.cat/default.private
 ```
 
 **Configurar OpenDKIM:**
@@ -127,9 +138,11 @@ sudo opendkim-genkey -b 2048 -d domini.cat -D /etc/opendkim/keys/domini.cat -s d
 sudo nano /etc/opendkim.conf
 ```
 
+Afegiu aquestes línies. Substituïu la línia `Socket` que ja hi ha al fitxer, perquè no n'hi hagi dues:
+
 ```
-Domain domini.cat
-KeyFile /etc/opendkim/keys/domini.cat/default.private
+Domain educem.cat
+KeyFile /etc/opendkim/keys/educem.cat/default.private
 Selector default
 Socket inet:8891@localhost
 ```
@@ -137,14 +150,18 @@ Socket inet:8891@localhost
 **Veure clau pública:**
 
 ```bash
-sudo cat /etc/opendkim/keys/domini.cat/default.txt
+sudo cat /etc/opendkim/keys/educem.cat/default.txt
 ```
 
 **Afegir registre DNS:**
 
+El registre TXT conté la **clau pública** (el valor `p=` del fitxer `default.txt`). La clau privada no surt mai del servidor.
+
 ```dns
-default._domainkey.domini.cat.    IN    TXT    "v=DKIM1; k=rsa; p=MIGfMA0GCSq...clau-privada...QIDAQAB"
+default._domainkey.educem.cat.    IN    TXT    "v=DKIM1; k=rsa; p=MIIBIjANBgkq...clau-publica...IDAQAB"
 ```
+
+`Nota:` El fitxer `default.txt` ja té el format d'un registre de zona i divideix la clau en diverses cadenes entre parèntesis. BIND l'accepta tal qual: el podeu copiar a la zona.
 
 **Integrar amb Postfix:**
 
@@ -160,6 +177,8 @@ smtpd_milters = inet:localhost:8891
 non_smtpd_milters = inet:localhost:8891
 ```
 
+Si més endavant afegiu un altre milter (per exemple, SpamAssassin a l'apartat 13), tots dos van a la mateixa línia `smtpd_milters`, separats per comes. Si escriviu una segona línia `smtpd_milters`, substitueix la primera i el DKIM deixa de funcionar.
+
 **Iniciar OpenDKIM:**
 
 ```bash
@@ -171,7 +190,7 @@ sudo systemctl restart postfix
 **Verificar:**
 
 ```bash
-dig TXT default._domainkey.domini.cat
+dig TXT default._domainkey.educem.cat
 ```
 
 ### Registre DMARC
@@ -181,7 +200,7 @@ dig TXT default._domainkey.domini.cat
 **Format:**
 
 ```dns
-_dmarc.domini.cat.    IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@domini.cat"
+_dmarc.educem.cat.    IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@educem.cat"
 ```
 
 **Paràmetres DMARC:**
@@ -191,8 +210,8 @@ _dmarc.domini.cat.    IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@dom
 | `v`       | Versió               | `DMARC1`                       |
 | `p`       | Política             | `none`, `quarantine`, `reject` |
 | `sp`      | Subdomini policy     | `none`, `quarantine`, `reject` |
-| `rua`     | Report aggregate URI | `mailto:reports@domini.cat`    |
-| `ruf`     | Report forensic URI  | `mailto:forensic@domini.cat`   |
+| `rua`     | Report aggregate URI | `mailto:reports@educem.cat`    |
+| `ruf`     | Report forensic URI  | `mailto:forensic@educem.cat`   |
 | `pct`     | Percentatge aplicat  | `100` (per defecte)            |
 | `adkim`   | Alineació DKIM       | `r` (relaxed), `s` (strict)    |
 | `aspf`    | Alineació SPF        | `r` (relaxed), `s` (strict)    |
@@ -207,40 +226,40 @@ _dmarc.domini.cat.    IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@dom
 
 ```dns
 # Política suau (monitorització)
-"v=DMARC1; p=none; rua=mailto:dmarc@domini.cat"
+"v=DMARC1; p=none; rua=mailto:dmarc@educem.cat"
 
 # Política estricta
-"v=DMARC1; p=reject; rua=mailto:dmarc@domini.cat; ruf=mailto:forensic@domini.cat"
+"v=DMARC1; p=reject; rua=mailto:dmarc@educem.cat; ruf=mailto:forensic@educem.cat"
 
 # Quarantena amb 50% aplicació
-"v=DMARC1; p=quarantine; pct=50; rua=mailto:dmarc@domini.cat"
+"v=DMARC1; p=quarantine; pct=50; rua=mailto:dmarc@educem.cat"
 ```
 
 **Verificar:**
 
 ```bash
-dig TXT _dmarc.domini.cat
+dig TXT _dmarc.educem.cat
 ```
 
 ### Configuració Completa DNS
 
-**Exemple complet per domini.cat:**
+**Exemple complet per educem.cat:**
 
 ```dns
 ; Registre A del servidor
 mail                IN    A      192.168.1.2
 
 ; Registre MX
-@                   IN    MX 10  mail.domini.cat.
+@                   IN    MX 10  mail.educem.cat.
 
 ; SPF
 @                   IN    TXT    "v=spf1 mx a ip4:192.168.1.2 -all"
 
-; DKIM
-default._domainkey  IN    TXT    "v=DKIM1; k=rsa; p=MIGfMA0GCS.......clau-privada.......DCBiQKBgQC..."
+; DKIM (clau pública del fitxer default.txt)
+default._domainkey  IN    TXT    "v=DKIM1; k=rsa; p=MIIBIjANBgkq.......clau-publica.......IDAQAB"
 
 ; DMARC
-_dmarc              IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@domini.cat"
+_dmarc              IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@educem.cat"
 ```
 
 ### Verificació i Test
@@ -249,22 +268,22 @@ _dmarc              IN    TXT    "v=DMARC1; p=quarantine; rua=mailto:dmarc@domin
 
 ```bash
 # MX
-dig MX domini.cat +short
+dig MX educem.cat +short
 
 # A
-dig A mail.domini.cat +short
+dig A mail.educem.cat +short
 
 # PTR (DNS invers)
 dig -x 192.168.1.2 +short
 
 # SPF
-dig TXT domini.cat +short | grep spf
+dig TXT educem.cat +short | grep spf
 
 # DKIM
-dig TXT default._domainkey.domini.cat +short
+dig TXT default._domainkey.educem.cat +short
 
 # DMARC
-dig TXT _dmarc.domini.cat +short
+dig TXT _dmarc.educem.cat +short
 ```
 
 ### Millors Pràctiques

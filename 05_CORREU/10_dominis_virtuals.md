@@ -1,4 +1,11 @@
-## 08. Dominis Virtuals de Correu
+## 10. Dominis Virtuals de Correu
+
+`IMPORTANT:` Aquest apartat és una **ampliació opcional**.
+
+- La configuració de *virtual mailbox domains* canvia com Dovecot autentica els usuaris (fitxer propi en lloc dels usuaris del sistema) i on desa les bústies.
+- Feu-la en una còpia o instantània del servidor: la configuració amb usuaris del sistema (`usuari1`, `usuari2`) deixa de funcionar.
+- Els dominis dels exemples acaben en `.test`, un domini reservat per a proves (RFC 6761).
+- Per fer proves des del client, cal crear-ne les zones al DNS (Tema 1).
 
 ### Què són els Dominis Virtuals?
 
@@ -14,17 +21,17 @@ Els **dominis virtuals** permeten gestionar múltiples dominis de correu en un �
 **Exemple:**
 
 ```
-Servidor: mail.servidor.cat
+Servidor: mail.educem.cat
 
-Domini 1: empresa1.cat
-  - usuari@empresa1.cat
-  - vendes@empresa1.cat
-  - suport@empresa1.cat
+Domini 1: empresa1.test
+  - usuari@empresa1.test
+  - vendes@empresa1.test
+  - suport@empresa1.test
 
-Domini 2: empresa2.com
-  - usuari@empresa2.com
-  - info@empresa2.com
-  - admin@empresa2.com
+Domini 2: empresa2.test
+  - usuari@empresa2.test
+  - info@empresa2.test
+  - admin@empresa2.test
 ```
 
 ### Tipus de Dominis Virtuals
@@ -54,7 +61,7 @@ sudo nano /etc/postfix/main.cf
 
 ```bash
 # Domini virtual alias
-virtual_alias_domains = alias.cat, altredomain.com
+virtual_alias_domains = alies.test, altredomini.test
 
 # Fitxer de mapes d'alias virtuals
 virtual_alias_maps = hash:/etc/postfix/virtual
@@ -71,18 +78,18 @@ sudo nano /etc/postfix/virtual
 # Format: adreça_virtual    adreça_real
 
 # Àlies individuals
-info@alias.cat              usuari@domini.cat
-vendes@alias.cat            comercial@domini.cat
-suport@alias.cat            tecnic@domini.cat
+info@alies.test              usuari@educem.cat
+vendes@alies.test            comercial@educem.cat
+suport@alies.test            tecnic@educem.cat
 
 # Redirigir tot un domini
-@altredomain.com            usuari@domini.cat
+@altredomini.test            usuari@educem.cat
 
 # Múltiples destinataris
-equip@alias.cat             usuari1@domini.cat, usuari2@domini.cat
+equip@alies.test             usuari1@educem.cat, usuari2@educem.cat
 
 # Àlies específics d'usuari
-usuari@alias.cat            usuari.real@domini.cat
+usuari@alies.test            usuari.real@educem.cat
 ```
 
 **Pas 3: Generar base de dades i aplicar**
@@ -95,7 +102,7 @@ sudo postmap /etc/postfix/virtual
 sudo postfix reload
 
 # Verificar
-postmap -q info@alias.cat hash:/etc/postfix/virtual
+postmap -q info@alies.test hash:/etc/postfix/virtual
 ```
 
 ### Configuració de Virtual Mailbox Domains
@@ -110,8 +117,8 @@ sudo groupadd -g 5000 vmail
 sudo useradd -g vmail -u 5000 vmail -d /var/mail/vhosts -m
 
 # Crear estructura de directoris
-sudo mkdir -p /var/mail/vhosts/domini1.cat
-sudo mkdir -p /var/mail/vhosts/domini2.com
+sudo mkdir -p /var/mail/vhosts/empresa1.test
+sudo mkdir -p /var/mail/vhosts/empresa2.test
 
 # Establir permisos
 sudo chown -R vmail:vmail /var/mail/vhosts
@@ -131,7 +138,7 @@ sudo nano /etc/postfix/main.cf
 # ============================================
 
 # Dominis virtuals (separats per comes)
-virtual_mailbox_domains = domini1.cat, domini2.com
+virtual_mailbox_domains = empresa1.test, empresa2.test
 
 # Mapa de bústies virtuals
 virtual_mailbox_maps = hash:/etc/postfix/vmailbox
@@ -149,8 +156,9 @@ virtual_mailbox_limit = 0
 # Mínim d'UID permès
 virtual_minimum_uid = 100
 
-# Àlies virtuals (opcional)
-virtual_alias_maps = hash:/etc/postfix/virtual_aliases
+# Àlies virtuals (opcional). Si ja feu servir virtual_alias_maps per als virtual alias domains,
+# poseu tots els fitxers a la mateixa línia: una segona línia virtual_alias_maps substitueix la primera.
+virtual_alias_maps = hash:/etc/postfix/virtual, hash:/etc/postfix/virtual_aliases
 ```
 
 **Pas 3: Crear fitxer de bústies virtuals**
@@ -164,15 +172,15 @@ sudo nano /etc/postfix/vmailbox
 # Format: adreça_email    ruta_maildir/
 
 # Domini 1
-usuari1@domini1.cat       domini1.cat/usuari1/
-usuari2@domini1.cat       domini1.cat/usuari2/
-admin@domini1.cat         domini1.cat/admin/
-info@domini1.cat          domini1.cat/info/
+usuari1@empresa1.test       empresa1.test/usuari1/
+usuari2@empresa1.test       empresa1.test/usuari2/
+admin@empresa1.test         empresa1.test/admin/
+info@empresa1.test          empresa1.test/info/
 
 # Domini 2
-usuari1@domini2.com       domini2.com/usuari1/
-vendes@domini2.com        domini2.com/vendes/
-suport@domini2.com        domini2.com/suport/
+usuari1@empresa2.test       empresa2.test/usuari1/
+vendes@empresa2.test        empresa2.test/vendes/
+suport@empresa2.test        empresa2.test/suport/
 ```
 
 **Pas 4: Crear fitxer d'àlies virtuals (opcional)**
@@ -183,10 +191,10 @@ sudo nano /etc/postfix/virtual_aliases
 
 ```bash
 # Àlies per dominis virtuals
-postmaster@domini1.cat    admin@domini1.cat
-webmaster@domini1.cat     admin@domini1.cat
+postmaster@empresa1.test    admin@empresa1.test
+webmaster@empresa1.test     admin@empresa1.test
 
-abuse@domini2.com         admin@domini2.com
+abuse@empresa2.test         admin@empresa2.test
 ```
 
 **Pas 5: Generar bases de dades**
@@ -202,16 +210,13 @@ sudo postmap /etc/postfix/virtual_aliases
 sudo postfix reload
 ```
 
-**Pas 6: Crear directoris Maildir**
+**Pas 6: Directoris Maildir**
+
+No cal crear-los a mà. El lliurament virtual de Postfix crea el Maildir de cada usuari (amb l'usuari `vmail`) quan rep el primer correu, perquè la ruta del fitxer `vmailbox` acaba en `/`.
 
 ```bash
-# Per cada usuari virtual, crear Maildir
-sudo maildirmake /var/mail/vhosts/domini1.cat/usuari1
-sudo maildirmake /var/mail/vhosts/domini1.cat/usuari2
-sudo maildirmake /var/mail/vhosts/domini2.com/usuari1
-
-# Establir permisos
-sudo chown -R vmail:vmail /var/mail/vhosts
+# Comprovar-ho després d'enviar el primer correu
+sudo ls -la /var/mail/vhosts/empresa1.test/usuari1/
 ```
 
 ### Configurar Dovecot per Dominis Virtuals
@@ -227,9 +232,9 @@ sudo nano /etc/dovecot/conf.d/10-mail.conf
 # Ubicació de bústies virtuals
 mail_location = maildir:/var/mail/vhosts/%d/%n
 
-# %d = domini (domini1.cat)
+# %d = domini (empresa1.test)
 # %n = nom usuari (usuari1)
-# %u = usuari complet (usuari1@domini1.cat)
+# %u = usuari complet (usuari1@empresa1.test)
 
 # Usuari i grup
 mail_uid = vmail
@@ -258,6 +263,10 @@ sudo nano /etc/dovecot/conf.d/10-auth.conf
 
 # Activar autenticació amb passwd-file
 !include auth-passwdfile.conf.ext
+
+# Els usuaris virtuals entren amb l'adreça completa (usuari1@empresa1.test):
+# traieu auth_username_format = %Ln (apartat 06), que n'eliminaria el domini
+#auth_username_format = %Ln
 ```
 
 **Pas 3: Crear fitxer d'usuaris virtuals**
@@ -296,11 +305,11 @@ Format: `usuari:contrasenya_hash:uid:gid:nom::home:shell`
 doveadm pw -s SHA512-CRYPT
 
 # Afegir usuaris al fitxer
-# usuari@domini.cat:{SHA512-CRYPT}$6$....:5000:5000::/var/mail/vhosts/domini.cat/usuari::
+# usuari@empresa1.test:{SHA512-CRYPT}$6$....:5000:5000::/var/mail/vhosts/empresa1.test/usuari::
 
-usuari1@domini1.cat:{SHA512-CRYPT}$6$random$hash...:5000:5000::/var/mail/vhosts/domini1.cat/usuari1::
-usuari2@domini1.cat:{SHA512-CRYPT}$6$random$hash...:5000:5000::/var/mail/vhosts/domini1.cat/usuari2::
-usuari1@domini2.com:{SHA512-CRYPT}$6$random$hash...:5000:5000::/var/mail/vhosts/domini2.com/usuari1::
+usuari1@empresa1.test:{SHA512-CRYPT}$6$random$hash...:5000:5000::/var/mail/vhosts/empresa1.test/usuari1::
+usuari2@empresa1.test:{SHA512-CRYPT}$6$random$hash...:5000:5000::/var/mail/vhosts/empresa1.test/usuari2::
+usuari1@empresa2.test:{SHA512-CRYPT}$6$random$hash...:5000:5000::/var/mail/vhosts/empresa2.test/usuari1::
 ```
 
 **Pas 5: Establir permisos i recarregar**
@@ -320,7 +329,7 @@ sudo systemctl reload dovecot
 
 ```bash
 # Des del mateix servidor
-echo "Test domini virtual" | mail -s "Prova" usuari1@domini1.cat
+echo "Test domini virtual" | mail -s "Prova" usuari1@empresa1.test
 
 # Verificar als logs
 sudo tail -f /var/log/mail.log
@@ -333,7 +342,7 @@ sudo tail -f /var/log/mail.log
 telnet localhost 143
 
 # Comandes:
-a001 LOGIN usuari1@domini1.cat contrasenya
+a001 LOGIN usuari1@empresa1.test contrasenya
 a002 LIST "" "*"
 a003 SELECT INBOX
 a004 LOGOUT
@@ -343,10 +352,10 @@ a004 LOGOUT
 
 ```bash
 # Veure fitxers de la bústia
-sudo ls -la /var/mail/vhosts/domini1.cat/usuari1/new/
+sudo ls -la /var/mail/vhosts/empresa1.test/usuari1/new/
 
 # Veure contingut d'un correu
-sudo cat /var/mail/vhosts/domini1.cat/usuari1/new/[fitxer]
+sudo cat /var/mail/vhosts/empresa1.test/usuari1/new/[fitxer]
 ```
 
 ### Resolució de Problemes
@@ -358,7 +367,7 @@ sudo cat /var/mail/vhosts/domini1.cat/usuari1/new/[fitxer]
 postconf virtual_mailbox_domains
 
 # Verificar mapa
-postmap -q usuari@domini.cat hash:/etc/postfix/vmailbox
+postmap -q usuari1@empresa1.test hash:/etc/postfix/vmailbox
 
 # Verificar logs
 sudo tail -f /var/log/mail.log
@@ -368,10 +377,10 @@ sudo tail -f /var/log/mail.log
 
 ```bash
 # Provar autenticació
-doveadm auth test usuari@domini.cat contrasenya
+doveadm auth test usuari1@empresa1.test contrasenya
 
 # Verificar fitxer d'usuaris
-sudo cat /etc/dovecot/users | grep usuari@domini.cat
+sudo cat /etc/dovecot/users | grep usuari1@empresa1.test
 
 # Verificar permisos
 ls -la /etc/dovecot/users
@@ -384,10 +393,9 @@ ls -la /etc/dovecot/users
 doveconf -n | grep mail_location
 
 # Verificar que existeix el directori
-sudo ls -la /var/mail/vhosts/domini.cat/usuari/
+sudo ls -la /var/mail/vhosts/empresa1.test/usuari1/
 
-# Crear si no existeix
-sudo maildirmake /var/mail/vhosts/domini.cat/usuari
+# Si no existeix, enviar-li un correu (Postfix el crea) i comprovar els permisos
 sudo chown -R vmail:vmail /var/mail/vhosts
 ```
 

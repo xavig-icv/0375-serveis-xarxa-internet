@@ -25,11 +25,13 @@ sudo nano /etc/postfix/main.cf
 smtpd_client_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,
-    reject_rbl_client zen.spamhaus.org,
+    reject_rbl_client zen.spamhaus.org=127.0.0.[2..11],
     reject_rbl_client bl.spamcop.net,
     reject_unknown_client_hostname,
     permit
 ```
+
+Les llistes negres (RBL) s'expliquen més avall. Fixeu-vos en el filtre `=127.0.0.[2..11]` de Spamhaus.
 
 **Explicació:**
 
@@ -77,40 +79,47 @@ smtpd_recipient_restrictions =
 
 **Permetre només IPs específiques:**
 
+Les taules `hash:` només busquen coincidències exactes (una IP o un nom concret). Per a xarxes en format CIDR (`192.168.1.0/24`) cal una taula `cidr:`.
+
 ```bash
-# Crear fitxer d'accés
-sudo nano /etc/postfix/access
+# Xarxes i IPs (taula cidr: no cal postmap)
+sudo nano /etc/postfix/client_access.cidr
 ```
 
 ```
-# Format: adreça/xarxa    acció
-
-# Permetre IPs específiques
-192.168.1.0/24           OK
-10.0.0.0/8              OK
-
-# Rebutjar IPs específiques
+# Format: xarxa/màscara    acció
+192.168.1.0/24          OK
 203.0.113.0/24          REJECT
-spammer.com             REJECT
-
-# Permetre domini específic
-domini-confianca.cat    OK
 ```
 
-**Generar base de dades:**
+```bash
+# Noms de domini dels clients (taula hash: cal postmap)
+sudo nano /etc/postfix/client_access
+```
+
+```
+# Format: domini    acció
+spammer.test            REJECT
+confianca.test          OK
+```
+
+**Generar base de dades (només la taula hash):**
 
 ```bash
-sudo postmap /etc/postfix/access
+sudo postmap /etc/postfix/client_access
 ```
 
 **Configurar a main.cf:**
 
 ```bash
 smtpd_client_restrictions =
-    check_client_access hash:/etc/postfix/access,
+    check_client_access cidr:/etc/postfix/client_access.cidr,
+    check_client_access hash:/etc/postfix/client_access,
     permit_mynetworks,
     reject
 ```
+
+`Nota:` Amb `reject` al final, només els clients de la llista (i `mynetworks`) es poden connectar. El servidor deixa de rebre correu de la resta de servidors d'Internet. És una configuració per a un servidor intern.
 
 ### Llistes Negres (RBL/DNSBL)
 
@@ -120,12 +129,19 @@ smtpd_client_restrictions =
 smtpd_client_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,
-    reject_rbl_client zen.spamhaus.org,
+    reject_rbl_client zen.spamhaus.org=127.0.0.[2..11],
     reject_rbl_client bl.spamcop.net,
-    reject_rbl_client cbl.abuseat.org,
-    reject_rbl_client dnsbl.sorbs.net,
     permit
 ```
+
+**Notes importants:**
+
+- **Spamhaus no respon a consultes fetes a través de DNS públics** (8.8.8.8, 1.1.1.1...): en lloc de "no llistat", hi respon amb un codi d'error (`127.255.255.254`).
+  - El nostre BIND fa servir `8.8.8.8` com a forwarder (Tema 1).
+  - Sense el filtre `=127.0.0.[2..11]`, Postfix interpretaria aquesta resposta com "llistat" i **rebutjaria tot el correu**.
+  - Amb el filtre, només es rebutja quan la resposta és un dels codis de llistat reals.
+- **Llistes obsoletes:** `dnsbl.sorbs.net` va tancar el 2024, i `cbl.abuseat.org` està integrada a `zen.spamhaus.org`. No les feu servir.
+- **Al laboratori**, els servidors no reben correu d'Internet: les RBL no es poden provar de manera real.
 
 ### Límits de Velocitat
 
@@ -170,28 +186,23 @@ sudo nano /etc/fail2ban/jail.local
 ```ini
 [postfix]
 enabled = true
-port = smtp,submission
-filter = postfix
-logpath = /var/log/mail.log
 maxretry = 5
 bantime = 3600
 
 [postfix-sasl]
 enabled = true
-port = smtp,submission
-filter = postfix-sasl
-logpath = /var/log/mail.log
 maxretry = 3
 bantime = 3600
 
 [dovecot]
 enabled = true
-port = pop3,pop3s,imap,imaps
-filter = dovecot
-logpath = /var/log/mail.log
 maxretry = 3
 bantime = 3600
 ```
+
+El filtre, els ports i el fitxer de log de cada presó ja estan definits a `/etc/fail2ban/jail.conf`. A `jail.local` només les activem i n'ajustem els valors.
+
+No hi poseu `filter = postfix-sasl`: a les versions actuals de fail2ban aquest filtre no existeix com a fitxer, perquè forma part del filtre `postfix` (mode `auth`). Si no troba el filtre, fail2ban no arrenca.
 
 **Reiniciar fail2ban:**
 
@@ -216,8 +227,8 @@ sudo nano /etc/postfix/whitelist
 
 ```
 # Domini de confiança
-domini-confianca.cat    OK
-empresa-segura.com      OK
+confianca.test    OK
+empresa-segura.test      OK
 
 # IP de confiança
 192.168.1.100          OK
@@ -231,8 +242,8 @@ sudo nano /etc/postfix/blacklist
 
 ```
 # Bloquejar domini
-spam-domain.com        REJECT Spam domain
-spammer.net            REJECT Known spammer
+spam-domini.test        REJECT Spam domain
+spammer2.test            REJECT Known spammer
 
 # Bloquejar IP
 203.0.113.50          REJECT Blocked IP
@@ -269,11 +280,11 @@ sudo grep "RBL" /var/log/mail.log | tail -10
 **Provar restriccions:**
 
 ```bash
-# Des d'un altre servidor
-telnet mail.domini.cat 25
+# Des d'un altre equip (per exemple, el servidor 0374)
+telnet mail.educem.cat 25
 
 EHLO test.example.com
-MAIL FROM:<spam@spammer.com>
+MAIL FROM:<spam@spammer.test>
 # Ha de rebutjar si està a la blacklist
 ```
 
