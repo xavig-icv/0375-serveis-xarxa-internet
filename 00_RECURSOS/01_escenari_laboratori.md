@@ -1,6 +1,6 @@
 ## 01. Escenari Únic del Laboratori
 
-Tots els temes del mòdul (DNS, DHCP, web, FTP, correu i missatgeria) es fan sobre el **mateix escenari**. Cada tema afegeix serveis a les mateixes màquines i fa servir el DNS i el DHCP configurats als temes 1 i 2. Per això és important mantenir les adreces i els noms d'aquest document durant tot el curs.
+Tots els temes del mòdul (DNS, DHCP, web, FTP, correu, missatgeria i àudio) es fan sobre el **mateix escenari**. Cada tema afegeix serveis a les mateixes màquines i fa servir el DNS i el DHCP configurats als temes 1 i 2. Per això és important mantenir les adreces i els noms d'aquest document durant tot el curs.
 
 ### Topologia
 
@@ -37,7 +37,7 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu i missatgeria) es fan sob
 | IP                              | Equip         | Noms DNS                                    | Funció                                                    |
 | ------------------------------- | ------------- | ------------------------------------------- | --------------------------------------------------------- |
 | `192.168.1.1`                   | Servidor 0374 | `ns2`                                       | Gateway amb NAT, DNS secundari, DHCP secundari (failover) |
-| `192.168.1.2`                   | Servidor 0375 | `ns1`, `www`, `web1`, `web2`, `mail`, `ftp`, `xmpp`, `news` | DNS primari, DHCP primari, web, FTP, correu, missatgeria i notícies |
+| `192.168.1.2`                   | Servidor 0375 | `ns1`, `www`, `web1`, `web2`, `mail`, `ftp`, `xmpp`, `news`, `radio` | DNS primari, DHCP primari, web, FTP, correu, missatgeria, notícies i àudio |
 | `192.168.1.50`                  | Client Ubuntu | `client`                                    | IP fixa al Tema 1; reserva DHCP a partir del Tema 2       |
 | `192.168.1.120`-`192.168.1.200` | Altres equips | -                                           | Rang dinàmic del DHCP                                     |
 | `192.168.1.254`                 | Relay DHCP    | -                                           | Només a l'activitat de DHCP relay (Tema 2)                |
@@ -55,6 +55,7 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu i missatgeria) es fan sob
 | 6    | Missatgeria      | Prosody (XMPP)             | Sí                          | -                    | 5222, 5281                    |
 | 6    | Llistes          | Mailman 3 (amb Postfix i Apache) | Sí                    | -                    | 25 i 443 (web `llistes`)      |
 | 6    | Notícies         | INN2                       | Sí                          | -                    | 119                           |
+| 7    | Àudio            | Icecast i ffmpeg; web i podcast a Apache | Sí            | -                    | 8000 i 443 (web `radio`)      |
 
 Apache i Nginx funcionen **alhora** al servidor 0375. Apache fa servir els ports estàndard (80 i 443) i Nginx, els ports 8080 i 8443.
 
@@ -99,6 +100,7 @@ fitxers  IN  CNAME   xmpp                 ; Tema 6 - fitxers del xat
 llistes  IN  CNAME   www                  ; Tema 6 - web de les llistes (Mailman)
 news     IN  A       192.168.1.2          ; Tema 6 - notícies (INN2)
 _xmpp-client._tcp  IN  SRV  0 5 5222 xmpp.educem.cat.   ; Tema 6
+radio    IN  A       192.168.1.2          ; Tema 7 - ràdio (Icecast) i podcast
 ```
 
 Zona inversa `1.168.192.in-addr.arpa`:
