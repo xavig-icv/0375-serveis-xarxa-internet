@@ -6,7 +6,11 @@ Al laboratori, el secundari és el servidor **0374** (`192.168.1.1`).
 
 **Pas 1: Instal·lar BIND9 al servidor secundari (0374)**
 
-La instal·lació és la mateixa de l'apartat 06.
+La instal·lació és la mateixa de l'apartat 06. A més, el 0374 té el tallafoc `ufw` actiu ([escenari](../00_RECURSOS/01_escenari_laboratori.md)): obriu-hi el DNS per a la xarxa interna, que inclou les consultes del client i els avisos del primari.
+
+```bash
+sudo ufw allow from 192.168.1.0/24 to any port 53
+```
 
 **Pas 2: Opcions del secundari (`/etc/bind/named.conf.options`)**
 

@@ -27,7 +27,7 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu, missatgeria, àudio i v�
 
 - **Servidor 0375** (Ubuntu Server): és el primari de tots els serveis del mòdul.
 - **Servidor 0374** (Ubuntu Server):
-  - És la sortida a Internet de la xarxa interna. L'`ip_forward` i el NAT es configuren al mòdul 0374.
+  - És la sortida a Internet de la xarxa interna. L'`ip_forward` i el NAT es configuren al mòdul 0374, amb el tallafoc `ufw`, que hi és actiu des del principi. Per això, cada tema que instal·la un servei al 0374 també n'obre el port.
   - És el secundari del DNS i del DHCP.
   - Al bloc d'alta disponibilitat (09), és la reserva del web, de l'FTP i de la recepció de correu, amb la IP virtual `192.168.1.10`.
   - També el fem servir com a segon equip de proves, per exemple per provar un accés des d'una IP no autoritzada.

@@ -88,7 +88,12 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
 }
 ```
 
-Al secundari cal instal·lar també `isc-dhcp-server` i posar `INTERFACESv4="enp0s8"` a `/etc/default/isc-dhcp-server` (apartat 03).
+Al secundari cal instal·lar també `isc-dhcp-server` i posar `INTERFACESv4="enp0s8"` a `/etc/default/isc-dhcp-server` (apartat 03). A més, el 0374 té el tallafoc `ufw` actiu: obriu-hi el DHCP de la xarxa interna i el port del failover.
+
+```bash
+sudo ufw allow in on enp0s8 to any port 67 proto udp           # peticions dels clients
+sudo ufw allow from 192.168.1.2 to any port 647 proto tcp      # failover amb el 0375
+```
 
 ### Mode Hot Standby (Primari Actiu - Secundari Reserva)
 

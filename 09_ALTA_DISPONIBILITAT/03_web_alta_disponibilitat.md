@@ -47,6 +47,12 @@ sudo systemctl restart ssh
 
 Els blocs `Match` s'apliquen fins al final del fitxer. Per això han d'anar sempre al final.
 
+El bastionat també limita l'SSH del tallafoc del 0374 a la xarxa del centre. Permeteu-lo des del 0375:
+
+```bash
+sudo ufw allow from 192.168.1.2 to any port 22 proto tcp
+```
+
 **Prova, al 0375.** El primer cop cal acceptar l'empremta de la clau del 0374:
 
 ```bash
