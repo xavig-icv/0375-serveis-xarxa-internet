@@ -215,7 +215,7 @@ Ara, amb `telnet localhost 25`, l'`EHLO` ja no mostra `250-AUTH`. És el comport
 
 ```bash
 # Connectar amb TLS al port submission
-openssl s_client -connect localhost:587 -starttls smtp -crlf
+openssl s_client -connect localhost:587 -starttls smtp -crlf -nocommands
 
 # Comandes (després de STARTTLS cal tornar a fer EHLO):
 EHLO localhost
@@ -231,6 +231,8 @@ Prova d'autenticació SASL.
 .
 QUIT
 ```
+
+`Nota:` Sense `-nocommands`, `openssl` tracta com a ordres pròpies les línies que comencen per algunes lletres. Amb `RCPT TO`, mostra `RENEGOTIATING` i la línia no arriba al servidor; amb `QUIT`, tanca la connexió sense enviar-lo.
 
 **Test 4: Amb Thunderbird**
 

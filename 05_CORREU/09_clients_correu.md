@@ -166,7 +166,7 @@ STARTTLS
 # (després de STARTTLS cal utilitzar openssl)
 
 # O directament amb openssl:
-openssl s_client -connect mail.educem.cat:587 -starttls smtp -crlf
+openssl s_client -connect mail.educem.cat:587 -starttls smtp -crlf -nocommands
 
 EHLO client.educem.cat
 AUTH PLAIN [base64_credentials]
@@ -181,6 +181,8 @@ Missatge de prova.
 .
 QUIT
 ```
+
+`Nota:` Sense `-nocommands`, `openssl` no envia la línia `RCPT TO` al servidor (apartat 08, Test 3).
 
 ### Resolució de Problemes
 
