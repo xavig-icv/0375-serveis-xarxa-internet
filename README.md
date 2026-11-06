@@ -17,7 +17,7 @@
 
 ## Escenari del Laboratori
 
-Tots els temes fan servir el mateix escenari i el domini `educem.cat`:
+Tots els temes fan servir el mateix escenari, el domini `educem.cat` i Ubuntu 24.04 LTS (Ubuntu Server als servidors i Ubuntu Desktop al client):
 
 - **Servidor 0375** (`192.168.1.2`): primari de tots els serveis.
 - **Servidor 0374** (`192.168.1.1`): gateway amb NAT i secundari.

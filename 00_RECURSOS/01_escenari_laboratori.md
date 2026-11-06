@@ -34,6 +34,8 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu, missatgeria, àudio i v�
 - **Client Ubuntu** (escriptori): només té la xarxa interna i surt a Internet pel 0374.
 - **Servidor Jitsi** (Ubuntu Server, només al Tema 8): màquina virtual addicional per a la videoconferència, a la xarxa interna (`192.168.1.3`). Com el client, surt a Internet pel 0374.
 
+**Sistema operatiu:** Ubuntu Server 24.04 LTS als servidors i Ubuntu Desktop 24.04 LTS al client. Les ordres i les versions de programari del material són les d'aquesta versió. `hostnamectl` mostra la de cada màquina a la línia `Operating System`.
+
 ### Pla d'Adreces
 
 | IP                              | Equip         | Noms DNS                                    | Funció                                                    |
