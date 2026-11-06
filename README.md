@@ -21,6 +21,7 @@ Tots els temes fan servir el mateix escenari i el domini `educem.cat`:
 - **Servidor 0375** (`192.168.1.2`): primari de tots els serveis.
 - **Servidor 0374** (`192.168.1.1`): gateway amb NAT i secundari.
 - **Client Ubuntu**: a la xarxa interna `192.168.1.0/24`.
+- **Servidor Jitsi** (`192.168.1.3`): màquina virtual addicional, només per a la videoconferència del Tema 8.
 
 Detall: [00_RECURSOS/01_escenari_laboratori.md](./00_RECURSOS/01_escenari_laboratori.md).
 
