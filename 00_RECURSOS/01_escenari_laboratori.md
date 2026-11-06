@@ -29,6 +29,7 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu, missatgeria, àudio i v�
 - **Servidor 0374** (Ubuntu Server):
   - És la sortida a Internet de la xarxa interna. L'`ip_forward` i el NAT es configuren al mòdul 0374.
   - És el secundari del DNS i del DHCP.
+  - Al bloc d'alta disponibilitat (09), és la reserva del web, de l'FTP i de la recepció de correu, amb la IP virtual `192.168.1.10`.
   - També el fem servir com a segon equip de proves, per exemple per provar un accés des d'una IP no autoritzada.
 - **Client Ubuntu** (escriptori): només té la xarxa interna i surt a Internet pel 0374.
 - **Servidor Jitsi** (Ubuntu Server, només al Tema 8): màquina virtual addicional per a la videoconferència, a la xarxa interna (`192.168.1.3`). Com el client, surt a Internet pel 0374.
@@ -40,6 +41,7 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu, missatgeria, àudio i v�
 | `192.168.1.1`                   | Servidor 0374 | `ns2`                                       | Gateway amb NAT, DNS secundari, DHCP secundari (failover) |
 | `192.168.1.2`                   | Servidor 0375 | `ns1`, `www`, `web1`, `web2`, `mail`, `ftp`, `xmpp`, `news`, `radio` | DNS primari, DHCP primari, web, FTP, correu, missatgeria, notícies i àudio |
 | `192.168.1.3`                   | Servidor Jitsi | `meet`                                     | Videoconferència (Jitsi Meet, Tema 8). IP fixa            |
+| `192.168.1.10`                  | IP virtual    | `serveis` (i, al bloc 09, `www`, `web1`, `web2`, `ftp`) | Bloc 09: la té el servidor actiu (normalment el 0375) |
 | `192.168.1.50`                  | Client Ubuntu | `client`                                    | IP fixa al Tema 1; reserva DHCP a partir del Tema 2       |
 | `192.168.1.120`-`192.168.1.200` | Altres equips | -                                           | Rang dinàmic del DHCP                                     |
 | `192.168.1.254`                 | Relay DHCP    | -                                           | Només a l'activitat de DHCP relay (Tema 2)                |
@@ -60,6 +62,7 @@ Tots els temes del mòdul (DNS, DHCP, web, FTP, correu, missatgeria, àudio i v�
 | 7    | Àudio            | Icecast i ffmpeg; web i podcast a Apache | Sí            | -                    | 8000 i 443 (web `radio`)      |
 | 8    | Vídeo            | Apache (vídeo i HLS), Nginx RTMP, ffmpeg | Sí            | -                    | 443 (web `video`) i 1935      |
 | 8    | Videoconferència | Jitsi Meet                 | -                           | -                    | Servidor Jitsi (`.3`): 443 i 10000/udp |
+| 09   | Alta disponibilitat | keepalived (VRRP), rsync | Principal (IP virtual)     | Reserva: web, FTP i MX secundari | VRRP (protocol IP 112); els dels serveis |
 
 Apache i Nginx funcionen **alhora** al servidor 0375. Apache fa servir els ports estàndard (80 i 443) i Nginx, els ports 8080 i 8443.
 
@@ -107,6 +110,13 @@ _xmpp-client._tcp  IN  SRV  0 5 5222 xmpp.educem.cat.   ; Tema 6
 radio    IN  A       192.168.1.2          ; Tema 7 - ràdio (Icecast) i podcast
 video    IN  A       192.168.1.2          ; Tema 8 - vídeo sota demanda, HLS i directes
 meet     IN  A       192.168.1.3          ; Tema 8 - servidor Jitsi (videoconferència)
+
+; Bloc 09 (alta disponibilitat). A més d'afegir aquests registres, en canvia d'altres:
+;   www, web1, web2 i ftp passen a la IP virtual 192.168.1.10
+;   llistes, sftp i tftp passen a ser registres A cap a 192.168.1.2
+serveis  IN  A       192.168.1.10         ; Bloc 09 - IP virtual
+mail2    IN  A       192.168.1.1          ; Bloc 09 - MX secundari (0374)
+@        IN  MX  20  mail2.educem.cat.    ; Bloc 09
 ```
 
 Zona inversa `1.168.192.in-addr.arpa`:
@@ -115,6 +125,7 @@ Zona inversa `1.168.192.in-addr.arpa`:
 2        IN  PTR     ns1.educem.cat.
 1        IN  PTR     ns2.educem.cat.
 3        IN  PTR     meet.educem.cat.     ; Tema 8
+10       IN  PTR     serveis.educem.cat.  ; Bloc 09
 50       IN  PTR     client.educem.cat.
 ```
 

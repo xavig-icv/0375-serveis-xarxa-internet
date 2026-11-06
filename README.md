@@ -13,6 +13,7 @@
 | `06_MISSATGERIA/` | Administració de serveis de missatgeria instantània, notícies i llistes de distribució          | 8     | RA6 |
 | `07_AUDIO/`       | Administració de serveis d'àudio: streaming, formats digitals, podcasting                       | 8     | RA7 |
 | `08_VIDEO/`       | Administració de serveis de vídeo: streaming, videoconferència, formats de compressió           | 8     | RA8 |
+| `09_ALTA_DISPONIBILITAT/` | Bloc final: web, FTP i correu redundants amb dos servidors (keepalived, sincronització, MX secundari) | - | RA3, RA4, RA5 |
 
 ## Escenari del Laboratori
 
@@ -34,7 +35,8 @@ Detall: [00_RECURSOS/01_escenari_laboratori.md](./00_RECURSOS/01_escenari_labora
 `Tema 5` Instal·lació i administració del servei de correu electrònic  
 `Tema 6` Instal·lació i administració de serveis de missatgeria instantània, notícies i llistes de distribució  
 `Tema 7` Instal·lació i administració del servei d'àudio  
-`Tema 8` Instal·lació i administració del servei de vídeo
+`Tema 8` Instal·lació i administració del servei de vídeo  
+`Bloc final` Alta disponibilitat dels serveis
 
 ## Resultats d'Aprenentatge
 
